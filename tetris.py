@@ -1379,11 +1379,6 @@ while running:
     # Render the fps text
     fps_text = font.render("FPS: {}".format(fps), True, (255, 255, 255))
 
-    # Draw the fps text to the screen
-    block = pygame.Rect(0, 0, 160, 40)
-    pygame.draw.rect(s, RESET, block, blocksize - 1)
-    s.blit(fps_text, (10, 10))
-
     # Tick the clock
     clock.tick(120)
     pygame.display.update()
