@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 #if you're looking to modify something, it's probably here
 das = 83
 softdropdelay = 200
+loadsetups = False #Loading setups take ages so disable this if you don't want it
 
 startingseed = randint(-10000, 100000000)
 piecesplaced = 0
@@ -124,14 +125,21 @@ defaultboardcharacter = "_"
 board = [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]
 nopieceboard = deepcopy(board)
 allboards = []
-startx = 150
+startx = 180
 starty = 180
 blocksize = 32
 blockwidth = 1
 
+extrax = 200
+
+pygame.init()
+s = pygame.display.set_mode((boardlength * blocksize + 10 * blocksize + extrax, boardheight * blocksize + 8 * blocksize))
+s.fill((20, 20, 20))
+
 debug = False
 def system(command):
     global lastcommand
+    lastcommand = command
     if(debug):
         print(command)
     ossystem(command)
@@ -296,21 +304,22 @@ def pc_finder():
 
 allsetups = {}
 
-print("Loading konbini setups")
-firstsetups = open("konbini/first.txt").read().splitlines()
-firstsetupscover6 = eval(open("konbini/first-covered-6.json").read())
-firstsetupscover7 = eval(open("konbini/first-covered-7.json").read())
-print("PC number 1 loaded")
+if(loadsetups):
+    print("Loading konbini setups")
+    firstsetups = open("konbini/first.txt").read().splitlines()
+    firstsetupscover6 = eval(open("konbini/first-covered-6.json").read())
+    firstsetupscover7 = eval(open("konbini/first-covered-7.json").read())
+    print("PC number 1 loaded")
 
-for i in range(2, 8):
-    allsetups[i] = {}
-    allsetups[i]["setups"] = open(f"konbini/setups{i}.txt").read().splitlines()
-    allsetups[i]["cover"] = eval(open(f"konbini/setups{i}cover.json").read())
-    print(f"PC number {i} loaded")
+    for i in range(2, 8):
+        allsetups[i] = {}
+        allsetups[i]["setups"] = open(f"konbini/setups{i}.txt").read().splitlines()
+        allsetups[i]["cover"] = eval(open(f"konbini/setups{i}cover.json").read())
+        print(f"PC number {i} loaded")
 
-def unglue(glued):
-    system(f"node unglueFumen.js --fu {glued} > ezsfinder.txt")
-    return(open("ezsfinder.txt").read().replace("\n", ""))
+    def unglue(glued):
+        system(f"node unglueFumen.js --fu {glued} > ezsfinder.txt")
+        return(open("ezsfinder.txt").read().replace("\n", ""))
 
 def setup_finder():
     global visualizeboard, lastcommand
@@ -391,10 +400,6 @@ def setup_finder():
             return False
 
         visualizeboard = unglue(pcsetups[pcsetupcovers[pckeypieces][0]])
-
-pygame.init()
-s = pygame.display.set_mode((boardlength * blocksize + 10 * blocksize + 600, boardheight * blocksize + 8 * blocksize))
-s.fill((20, 20, 20))
 
 #Define color codes
 RED = (255, 0, 0)
@@ -876,12 +881,9 @@ def redo():
 
 def softdrop():
     global currentpiecey, score
-    while placeable(currentpiece, currentpiecerotation, currentpiecex, currentpiecey):
+    if(placeable(currentpiece, currentpiecerotation, currentpiecex, currentpiecey)):
         currentpiecey += 1
         score += 1
-    currentpiecey -= 1
-    score -= 1
-    drawallpieces()
 
 def hold():
     global currentpiece, holdpiece, currentpiecerotation, currentpiecex, currentpiecey
@@ -896,8 +898,11 @@ def hold():
     currentpiecerotation = 0
     currentpiecex = pieces[currentpiece]["spawnposition"]
     currentpiecey = 0
-    clearscreen(-3, -3, 6, 3)
-    drawinfopieces(-3, -3, holdpiece)
+    clearscreen(-6, -3, 6, 3)
+    if(holdpiece == "I"):
+        drawinfopieces(-5, -6, holdpiece)
+    else:
+        drawinfopieces(-3, -4, holdpiece)
 
 running = True
 
@@ -917,7 +922,7 @@ def blockrenderer(x, y, color, smaller = False):
     pygame.draw.rect(s, color, block, blocksize - 1)
 
 def writetext(x, y, text, size):
-    font = pygame.font.SysFont(None, size)
+    font = pygame.font.SysFont('font/ABeeZee-Regular.otf', size)
     global startx, starty, blocksize, blockwidth
     pytext = font.render(text, True, (255, 255, 255))
     s.blit(pytext, (startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize))
@@ -936,7 +941,7 @@ tetrominoes = f"IZSJLTOG{defaultboardcharacter}"
 piece = 0
 smaller = False
 filledpieces = []
-xlocation = 8
+xlocation = 6
 
 def createcolorsquares():
     for v, i in enumerate(tetrominoes):
@@ -964,13 +969,15 @@ def grayoutboard():
                 nopieceboard[piecerowindex][piececolumnindex] = "G"
 
 def truefalsebutton(text, x, y, value):
-    for i in range(-3, 3, 1):
-        blockrenderer(x + i, y - 1, RESET)
+    clearscreen(x - 3, y - 2, 6, 3)
+
     font = pygame.font.SysFont(None, 24)
     pytext = font.render(text, True, (255, 255, 255))
+
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
-    s.blit(pytext, (startx + (x * blocksize) + (1 * blocksize) - textwidth/2, starty + (y - 1 * blocksize)))
+
+    s.blit(pytext, (startx + (x * blocksize) + (1 * blocksize) - textwidth/2, starty + ((y - 1) * blocksize)))
 
     blockrenderer(x + 1, y, RED)
     blockrenderer(x, y, GARBAGE)
@@ -984,6 +991,10 @@ def truefalsebutton(text, x, y, value):
 
 def createsfinderboxes():
     for box in ezsfindervariables:
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
+
+def createhelpboxes():
+    for box in helpvariables:
         setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
 
 def createtruefalse():
@@ -1015,7 +1026,7 @@ def setqueuebutton():
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
 
 def setheldpiece():
-    x = -4
+    x = -5
     y = -5
 
     font = pygame.font.SysFont(None, 24)
@@ -1144,7 +1155,7 @@ def set_hold():
 lastcommand = "No command yet"
 
 #submission box jumping point
-ezsfinderboxx = -4
+ezsfinderboxx = 20
 helpbuttonboxx = boardlength + 14
 fumenbuttonboxx = boardlength + 40
 ezsfindervariables = [
@@ -1152,12 +1163,17 @@ ezsfindervariables = [
 ["Minimals", ezsfinderboxx, 2, BLUE, "minimals"],
 ["T-Spin Minimals", ezsfinderboxx, 4, RED, "t_spin_minimals"],
 ["Tetris Minimals", ezsfinderboxx, 6, BLUE, "tetris_minimals"],
-["Score", ezsfinderboxx, 8, RED, "get_score"],
-["PC finder", helpbuttonboxx, 0, BLUE, "pc_finder"],
-["Setup Finder", helpbuttonboxx, 2, MAGENTA, "setup_finder"],
+["Score", ezsfinderboxx, 8, RED, "get_score"]
 ]
 
-textboxx = 20
+helpvariables = [
+    ["PC finder", helpbuttonboxx, 0, BLUE, "pc_finder"]
+]
+
+if(loadsetups):
+    helpvariables.append(["Setup Finder", helpbuttonboxx, 2, MAGENTA, "setup_finder"])
+
+textboxx = 24
 textvariables = [
 ["Set fed queue", textboxx, 0, ORANGE, "sfinder_fed_queue"],
 ["Set clear", textboxx, 2, CYAN, "clear"],
@@ -1166,22 +1182,20 @@ textvariables = [
 ["Load fumen", textboxx, 8, ORANGE, "loadfumen"]
 ]
 
-truefalsex = 30
+truefalsex = 20
 truevariables = [
-["Initial b2b", truefalsex, 0, initial_b2b],
+["Initial b2b", truefalsex, -2, initial_b2b],
 ]
 
 def drawlastcommand():
     global textboxx
-    x = 14
-    y = 13
+    x = -5
+    y = 16
     font = pygame.font.SysFont(None, 24)
     pytext = font.render(lastcommand, True, (255, 255, 255))
-    textwidth = pytext.get_width()
-    textheight = pytext.get_height()
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), 20 * blocksize, 2 * blocksize)
     pygame.draw.rect(s, RESET, block)
-    s.blit(pytext, (startx + (x * blocksize) + (1.5 * blocksize), starty + (y * blocksize) + (1 *  blocksize) - textheight/2 + 16, blocksize, blocksize))
+    s.blit(pytext, (startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize))
 
 def clearscreen(x, y, width, height):
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), width * blocksize, height * blocksize)
@@ -1193,14 +1207,20 @@ def drawallpieces():
     drawlastcommand()
     drawghostpiece()
 
-    clearscreen(25, 5, 10, 4)
-    writetext(25, 5, f"Score: {score}", 36)
+    statx = -5
+    staty = 5
+    statincrement = 0.5
+    statsize = 24
+
+    clearscreen(statx, 5, staty, 10)
+    writetext(statx, staty + statincrement, f"Score: {score}", statsize)
+
     if(piecesplaced == 0):
-        writetext(25, 6, f"PPB  : 0", 36)
+        writetext(statx, staty + statincrement * 2, f"PPB  : 0", statsize)
     else:
-        writetext(25, 6, f"PPB  : {round(score/piecesplaced, 2)}", 36)
-    writetext(25, 7, f"Pieces Placed: {piecesplaced}", 36)
-    writetext(25, 8, f"PC Counter: {(piecesplaced * 5 % 7) + 1}", 36)
+        writetext(statx, staty + statincrement * 2, f"PPB  : {round(score/piecesplaced, 2)}", statsize)
+    writetext(statx, staty + statincrement * 3, f"Pieces Placed: {piecesplaced}", statsize)
+    writetext(statx, staty + statincrement * 4, f"PC Counter: {(piecesplaced * 5 % 7) + 1}", statsize)
 
     if(visualizeboard != ""):
         drawvisualizer(visualizeboard)
@@ -1248,7 +1268,7 @@ def reset():
     nopieceboard = [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]
     board = deepcopy(nopieceboard)
     holdpiece = ""
-    clearscreen(-3, -3, 6, 3)
+    hold()
     drawallpieces()
     savestate()
     visualizeboard = ""
@@ -1296,14 +1316,20 @@ keyspressed = []
 clock = pygame.time.Clock()
 
 # Set the font for the fps display
-font = pygame.font.SysFont('Arial', 30)
+font = pygame.font.SysFont(None, 30)
 
-createsettextboxes()
-createsfinderboxes()
+menu = 0
+
+if(menu == 1):
+    createsfinderboxes()
+    createsettextboxes()
+    createtruefalse()
+elif(menu == 2):
+    createhelpboxes()
+
 createcolorsquares()
 setqueuebutton()
 setheldpiece()
-createtruefalse()
 savestate()
 
 while running:
@@ -1340,15 +1366,16 @@ while running:
                 if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
                     set_variable(box[4])
 
-            for box in ezsfindervariables:
-                if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
-                    fumen = outputcode()
-                    exec(f"{box[4]}()")
+            if(menu == 1):
+                for box in ezsfindervariables:
+                    if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
+                        fumen = outputcode()
+                        exec(f"{box[4]}()")
 
-            for box in truevariables:
-                if(pos[0] >= box[1] and pos[0] <= box[1] + 1 and pos[1] == box[2]):
-                    box[3] = not box[3]
-                    createtruefalse()
+                for box in truevariables:
+                    if(pos[0] >= box[1] and pos[0] <= box[1] + 1 and pos[1] == box[2]):
+                        box[3] = not box[3]
+                        createtruefalse()
 
             if(pos[0] >= boardlength + 2 and pos[0] <= boardlength + 5 and pos[1] >= -2 and pos[1] <= -1):
                 set_queue()
@@ -1374,11 +1401,5 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    fps = int(clock.get_fps())
-
-    # Render the fps text
-    fps_text = font.render("FPS: {}".format(fps), True, (255, 255, 255))
-
     # Tick the clock
-    clock.tick(120)
     pygame.display.update()
