@@ -8,7 +8,7 @@ An attempt at a more pc-orientated client
 * Tetris-fumen
 * sfinder-minimals
 * yargs
-## Python**
+## Python
 * pygame (Make sure this one is up to date)
 * beautifulsoup
 
