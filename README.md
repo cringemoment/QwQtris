@@ -3,7 +3,7 @@
 An attempt at a more pc-orientated client
 
 ## Requirements
-## Java**
+## Java
 ## Node
 * Tetris-fumen
 * sfinder-minimals
