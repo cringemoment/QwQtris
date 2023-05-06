@@ -3,10 +3,11 @@
 An attempt at a more pc-orientated client
 
 ## Requirements
-**Java**
+## Java**
 ## Node
 * Tetris-fumen
 * sfinder-minimals
+* yargs
 ## Python**
 * pygame (Make sure this one is up to date)
 * beautifulsoup
