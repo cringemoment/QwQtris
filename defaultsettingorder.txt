@@ -1,0 +1,11 @@
+move_left
+move_right
+reset
+cw_rotate
+ccw_rotate
+full_rotate
+harddrop
+softdrop
+hold
+undo
+redo

@@ -1,12 +1,4 @@
-B2B TSD: 2096
-B2B TSS: 816
-B2B quad: 588
-B2B quadTS0: 448
-{
-  average_covered_score: 4589.880952380952,
-  num_covered_queues: 5040,
-  num_pc_queues: 5040,
-  num_extra_queues: 3948,
-  num_b2b_queues: 1036
-}
-5040
+ZZJJJSTTTL
+XZZJJSSLLL
+XXXJJJSTXX
+XXXXIIIIXX

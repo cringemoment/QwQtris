@@ -2,8 +2,8 @@ import json
 from os import system as ossystem
 
 # Load JSON data from file
-data = open("konbini/setups4.txt").read().splitlines()
-pieces = open("konbini/pieces4.txt").read().splitlines()
+data = open("konbini/dpc.txt").read().splitlines()
+pieces = open("konbini/dpcpieces.txt").read().splitlines()
 
 import itertools
 
@@ -124,7 +124,7 @@ def findrepeat(string):
             unique.append(i)
     return True
 
-queuetogenerate = "*p1,*p1,*p1,*p1,*p1"
+queuetogenerate = "*p1,*p7"
 permutations = sfinder_all_permutations(queuetogenerate)
 # Create an empty dictionary with permutations as keys and empty lists as values
 permutations_dict = {}
@@ -134,11 +134,8 @@ for i in permutations:
 print(len(data))
 for setupindex, glued in enumerate(data):
     print(f"On setup {setupindex + 1}")
-    setuppieces = ''.join(pieces[setupindex].split("	"))
-    if(findrepeat(setuppieces)):
-        system(f'java -jar sfinder.jar cover --tetfu {glued} -p [{setuppieces}]! > coverdata.txt')
-    else:
-        system(f"java -jar sfinder.jar cover --tetfu {glued} -p {repeat_first(setuppieces)[0]},[{repeat_first(setuppieces)[1:]}]! > coverdata.txt")
+    dpcpiece = pieces[setupindex]
+    system(f'java -jar sfinder.jar cover --tetfu {glued} -p {dpcpiece},*p7 > coverdata.txt')
     queuescovered = []
     coverdata = [i.split(",") for i in open("output/cover.csv").read().splitlines()[1:]]
     for cover in coverdata:
@@ -146,5 +143,5 @@ for setupindex, glued in enumerate(data):
             permutations_dict[cover[0]].append(setupindex)
 
 # Opens a new json file called data-3-covered.json, and then writes the output to the file
-with open('konbini/setups4cover.json', 'w', encoding="utf-8") as f:
+with open('konbini/dpccover.json', 'w', encoding="utf-8") as f:
     json.dump(permutations_dict, f)

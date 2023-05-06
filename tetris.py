@@ -6,6 +6,7 @@ from os import system as ossystem
 import tkinter as tk
 import itertools
 from bs4 import BeautifulSoup
+from collections import OrderedDict
 
 #if you're looking to modify something, it's probably here
 das = 83
@@ -16,22 +17,61 @@ loadsetups = False #Loading setups take ages so disable this if you don't want i
 
 startingseed = randint(-10000, 100000000)
 piecesplaced = 0
-
-controls = {
-pygame.K_LEFT : "move_left",
-pygame.K_RIGHT : "move_right",
-pygame.K_w : "reset",
-pygame.K_UP : "clockwise_rotate",
-pygame.K_s : "counterlockwise_rotate",
-pygame.K_d : "full_rotate",
-pygame.K_x : "harddrop",
-pygame.K_DOWN : "softdrop",
-pygame.K_z : "hold",
-pygame.K_t : "undo",
-pygame.K_y : "redo"
-}
+controls = {}
 
 configfile = open("settings.txt").read().splitlines()
+if(configfile == []):
+    controls = {
+    pygame.K_LEFT : "move_left",
+    pygame.K_RIGHT : "move_right",
+    pygame.K_w : "reset",
+    pygame.K_UP : "cw_rotate",
+    pygame.K_s : "ccw_rotate",
+    pygame.K_d : "full_rotate",
+    pygame.K_x : "harddrop",
+    pygame.K_DOWN : "softdrop",
+    pygame.K_z : "hold",
+    pygame.K_t : "undo",
+    pygame.K_y : "redo"
+    }
+
+configfile = open("settings.txt").read().splitlines()
+handlingfile = open("handling.txt").read().splitlines()
+settingorder = open("defaultsettingorder.txt").read().splitlines()
+configfile = sorted(configfile, key = lambda x: settingorder.index(x.split("-")[1]))
+
+def savecontrols():
+    writeto = open("settings.txt", "w")
+    handlingto = open("handling.txt", "w")
+    for control in controls:
+        writeto.write(f"{control}-{controls[control]}\n")
+
+    handlingto.write(str(das))
+    handlingto.write("\n")
+    handlingto.write(str(arr))
+    handlingto.write("\n")
+    handlingto.write(str(softdropdelay))
+    handlingto.write("\n")
+    handlingto.write(str(softdropspeed))
+    handlingto.write("\n")
+    handlingto.write(str(loadsetups))
+    handlingto.write("\n")
+
+def loadcontrols():
+    global das, arr, softdropdelay, softdropspeed, loadsetups
+    for i in configfile:
+        controls[int(i.split("-")[0])] = i.split("-")[1]
+
+    das = int(handlingfile[0])
+    arr = int(handlingfile[1])
+    softdropdelay = int(handlingfile[2])
+    softdropspeed = int(handlingfile[3])
+    loadsetups = handlingfile[4] == "True"
+
+    print(das)
+
+loadcontrols()
+controlslist = [controls[i] for i in controls]
 
 def generate_permutations(bag, permutation_length):
     elements = list(bag)
@@ -117,8 +157,6 @@ def loadfumen(fumen):
             for i in tempboard:
                 fulllengthboard.append([char for char in i])
 
-        print(fulllengthboard)
-
         nopieceboard = deepcopy(fulllengthboard)
         drawallpieces()
 
@@ -143,7 +181,6 @@ s.fill((20, 20, 20))
 debug = False
 def system(command):
     global lastcommand
-    lastcommand = command
     if(debug):
         print(command)
     ossystem(command)
@@ -216,42 +253,56 @@ def get_score():
             print("On average, when the setup has a perfect clear, you would score %s points."% round(float(i.split(": ")[1][:-1]), 2))
             print("Factoring in pc chance (%s%%), the average score is %s" % (int(score[v + 1].split(": ")[1][:-1]) / int(score[-1]) * 100, round(float(i.split(": ")[1][:-1]) / int(score[-1]) * int(score[v + 1].split(": ")[1][:-1]), 2)))
 
-#this function takes in a list of tetrominoes, and returns an int of how good the function judges the save to be
-def evaluatesave(save): #defining the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be
-    piecessaveindex = { #this defines the dictionary for the score values of each tetromino, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be
-    "S" : 0, #this sets the save value for the s piece, for the piecessaveindex dictionary, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be. here, it is set to 0
-    "Z" : 0, #this sets the save value for the z piece, for the piecessaveindex dictionary, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be. here, it is set to 0
-    "O" : 3, #this sets the save value for the o piece, for the piecessaveindex dictionary, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be. here, it is set to 4
-    "J" : 1, #this sets the save value for the j piece, for the piecessaveindex dictionary, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be. here, it is set to 2
-    "L" : 1, #this sets the save value for the l piece, for the piecessaveindex dictionary, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be. here, it is set to 2
-    "I" : 4, #this sets the save value for the i piece, for the piecessaveindex dictionary, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be. here, it is set to 6
-    "T" : 6 #this sets the save value for the t piece, for the piecessaveindex dictionary, which is used in the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be. here, it is set to 8
+def evaluatesave(save):
+    piecessaveindex = {
+    "S" : 0,
+    "Z" : 0,
+    "O" : 3,
+    "J" : 1,
+    "L" : 1,
+    "I" : 4,
+    "T" : 6
     }
 
-    score = 0 #this initializes the score value, which is the int returned by the evaluatesave function, which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be
-    for piece in save: #this creates a for loop, which will go through every element in the save function (a list of tetrominoes passed in by the evaluatesave function which takes in a list of tetrominoes, and returns an int of how good the function judges the save to be) and set a variable called piece to the element
-        score += piecessaveindex[piece] #this accesses the piecessaveindex dictionary, and adds the save value of the provided tetromino to the score variable
+    score = 0
+    for piece in save:
+        score += piecessaveindex[piece]
 
-    if(save.count("J") + save.count("L") % 2 == 0): #this if counts how many J pieces and L pieces are in the provided saves list, which is a list of tetrominoes, and then adds the 2 values together. afterwards it checks to see if the count is even, by performing the modulo operation on it. modulo returns the remainder when divided, so if the remainder is 0, that must mean it is divisible by 2 and therefore is even
-        score += 8 #this adds a value of 8 to the score variable, as a bonus for having an even amount of j and l pieces in the saves variable
+    if(save.count("J") + save.count("L") % 2 == 0):
+        score += 8
 
-    return score #this returns an int of how good the function judges the save to be
+    return score
+
+def evaluatedpcsave(save):
+    piecessaveindex = {
+    "T" : 0,
+    "J" : 1,
+    "L" : 1,
+    "S" : 2,
+    "Z" : 3,
+    "I" : 3,
+    "O" : 4
+    }
+
+    score = 0
+    for piece in save:
+        score += piecessaveindex[piece]
+
+    return score
 
 def pc_finder():
     global visualizeboard, lastcommand
     count = 0
-    startingheight = boardheight
+    startingheight = boardheight - 2
     highestvalue = startingheight
 
     for rowindex, row in enumerate(nopieceboard):
         if(highestvalue != startingheight):
             break
         for value in row:
-            if(value != defaultboardcharacter):
+            if(value != defaultboardcharacter and rowindex <= startingheight):
                 highestvalue = rowindex
                 break
-
-    print(startingheight)
 
     count = 0
 
@@ -261,8 +312,11 @@ def pc_finder():
                 count += 1
 
         if count % 4 == 0 and i <= highestvalue: # check if count is divisible by 4
+            print(i)
             highestvalue = boardheight - i
             break
+
+    print(highestvalue)
 
     allpieces = currentpiece + holdpiece + ''.join(queue)
 
@@ -312,6 +366,82 @@ def pc_finder():
     else:
         lastcommand = "No solution, sorry"
 
+def dpc_save_finder():
+    global visualizeboard, lastcommand
+    count = 0
+    startingheight = boardheight - 2
+    highestvalue = startingheight
+
+    for rowindex, row in enumerate(nopieceboard):
+        if(highestvalue != startingheight):
+            break
+        for value in row:
+            if(value != defaultboardcharacter and rowindex <= startingheight):
+                highestvalue = rowindex
+                break
+
+    count = 0
+
+    for i in range(boardheight - 1, -1, -1):
+        for j in range(boardlength):
+            if nopieceboard[i][j] == defaultboardcharacter:
+                count += 1
+
+        if count % 4 == 0 and i <= highestvalue: # check if count is divisible by 4
+            print(i)
+            highestvalue = boardheight - i
+            break
+
+    print(highestvalue)
+
+    allpieces = currentpiece + holdpiece + ''.join(queue)
+
+    if(len(bag) == 1):
+        allpieces += bag[0]
+
+    system(f"java -jar sfinder.jar path -t {fumen} -p {allpieces} --clear {highestvalue} > ezsfinder.txt")
+
+    with open('output/path_unique.html', 'r', encoding = "utf-8") as f:
+        html = f.read()
+
+    soup = BeautifulSoup(html, 'html.parser')
+
+    solutions = []
+
+    for link in soup.find_all('a')[1:]:
+        href = link.get('href')
+        if href.startswith('http://fumen.zui.jp/?'):
+            pieces = ''.join([i[0] for i in link.get_text().split(' ')])
+            solutions.append([href, pieces])
+
+    saves = []
+
+    if(solutions != []):
+        for solution in solutions:
+            solutionfumen = solution[0]
+            piecesused = solution[1]
+
+            solutionallpieces = [char for char in allpieces.replace(",", "")]
+            solutionpiecesused = [char for char in piecesused]
+            pieceuseddontremove = deepcopy(piecesused)
+
+            for pieceused in pieceuseddontremove:
+                solutionpiecesused.remove(pieceused)
+                try:
+                    solutionallpieces.remove(pieceused)
+                except ValueError:
+                    lastcommand = "Errored. Place more pieces"
+                    return False
+
+            leftover = solutionallpieces + bag
+            saves.append([solutionfumen, leftover, evaluatedpcsave(leftover)])
+
+        saves.sort(key=lambda x: int(x[2]) * -1)
+        visualizeboard = saves[0][0]
+
+    else:
+        lastcommand = "No solution, sorry"
+
 allsetups = {}
 
 if(loadsetups):
@@ -327,9 +457,14 @@ if(loadsetups):
         allsetups[i]["cover"] = eval(open(f"konbini/setups{i}cover.json").read())
         print(f"PC number {i} loaded")
 
-    def unglue(glued):
-        system(f"node unglueFumen.js --fu {glued} > ezsfinder.txt")
-        return(open("ezsfinder.txt").read().replace("\n", ""))
+if(loaddpc):
+    dpcsetups = open("konbini/dpc.txt").read().splitlines()
+    dpccover = eval(open("konbini/dpccover.json").read())
+    print(f"DPC setups loaded")
+
+def unglue(glued):
+    system(f"node unglueFumen.js --fu {glued} > ezsfinder.txt")
+    return(open("ezsfinder.txt").read().replace("\n", ""))
 
 def setup_finder():
     global visualizeboard, lastcommand
@@ -422,6 +557,44 @@ def setup_finder():
             return False
 
         visualizeboard = unglue(pcsetups[pcsetupcovers[pckeypieces][0]])
+
+def dpc_finder():
+    global visualizeboard, lastcommand
+    if(nopieceboard != [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]):
+        lastcommand = "This only works for empty boards"
+        return False
+
+    allpieces = currentpiece + holdpiece + ''.join(queue)
+    if(len(bag) == 1):
+        allpieces += bag[0]
+
+    pcnumber = (5 * piecesplaced % 7) + 1
+
+    if(pcnumber != 3):
+        lastcommand = "This only works for third pc"
+        return False
+
+    allpieces = [char for char in allpieces]
+
+    piecesinused = ""
+    if(allpieces[1] in allpieces[2:]):
+        allpieces[0], allpieces[1] = allpieces[1], allpieces[0]
+
+    allpieces = ''.join(allpieces)
+
+    pckeypieces = allpieces
+    pcsetups = dpcsetups
+    pcsetupcovers = dpccover
+
+    try:
+        if(len(pcsetupcovers[pckeypieces]) == 0):
+            lastcommand = "No setup found in the database"
+            return False
+    except KeyError:
+        lastcommand = "No setup found in the database"
+        return False
+
+    visualizeboard = unglue(pcsetups[pcsetupcovers[pckeypieces][0]])
 
 #Define color codes
 RED = (255, 0, 0)
@@ -681,14 +854,6 @@ def clear_filled_rows(board):
     gointob2b = 0
     filled_rows = get_filled_rows(board)
 
-    if(len(filled_rows) > 0):
-        combo = True
-        combo += 1
-
-        for row in filled_rows:
-            del board[row]
-            board.insert(0, [defaultboardcharacter for _ in range(boardlength)])
-
     if(currentpiece == "T"):
         facing = [[1, 0, 1],
                   [0, 0, 0],
@@ -709,12 +874,22 @@ def clear_filled_rows(board):
                             facingcorners += 1
                 else:
                     corners += 1
+                    if(facing[yoffset][xoffset] == 1):
+                        facingcorners += 1
 
         if(corners >= 3):
-            if(facingcorners >= 2):
+            if(facingcorners == 2):
                 gointob2b = 2
             else:
                 gointob2b = 1
+
+    if(len(filled_rows) > 0):
+        combo = True
+        combo += 1
+
+        for row in filled_rows:
+            del board[row]
+            board.insert(0, [defaultboardcharacter for _ in range(boardlength)])
 
     else:
         combo = False
@@ -732,6 +907,8 @@ gointob2b = 0
 def tabulatescore(linescleared, activateb2b):
     global combo, combocount, b2b
 
+    pced = False
+
     currentscore = 0
 
     if(activateb2b == 2):
@@ -745,6 +922,7 @@ def tabulatescore(linescleared, activateb2b):
 
     if(nopieceboard == [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]):
         currentscore += scorevalues["pc"]
+        pced = True
 
     if(b2b == True):
         if(activateb2b > 0 or linescleared == 4):
@@ -752,13 +930,31 @@ def tabulatescore(linescleared, activateb2b):
 
     currentscore += combocount * 50
 
+    wordlines = ["", "Single", "Double", "Triple", "QwQ"]
+    word = wordlines[linescleared]
+
+    if(b2b):
+        word = "B2B " + word
+
+    if(activateb2b == 1):
+        word = "Mini Tspin " + word
+    elif(activateb2b == 2):
+        word = "Tspin " + word
+
+    if(pced):
+        word += " PC"
+
     if(linescleared == 4 or activateb2b > 0):
         b2b = True
-    else:
+
+    elif(linescleared > 0):
         b2b = False
 
     if(combo == True):
         combocount += 1
+
+    clearscreen(-5, 0, 4, 4)
+    writetext(-5, 0, word, 20)
 
     return(int(currentscore))
 
@@ -805,10 +1001,10 @@ def rotatepiece(rotation):
             currentpiecerotation = (currentpiecerotation + rotation) % 4
             break
 
-def clockwise_rotate():
+def cw_rotate():
     rotatepiece(1)
 
-def counterlockwise_rotate():
+def ccw_rotate():
     rotatepiece(-1)
 
 def full_rotate():
@@ -895,7 +1091,10 @@ def loadboard():
 
     clearscreen(-6, -3, 6, 3)
     if(not holdpiece == ""):
-        drawinfopieces(-3, -3, holdpiece)
+        if(holdpiece == "I"):
+            drawinfopieces(-5, -6, holdpiece)
+        else:
+            drawinfopieces(-3, -4, holdpiece)
 
     if bag == []:
         bag = deepcopy(ogbag)
@@ -1017,7 +1216,7 @@ def grayoutboard():
                 nopieceboard[piecerowindex][piececolumnindex] = "G"
 
 def truefalsebutton(text, x, y, value):
-    clearscreen(x - 2, y - 2, 6, 3)
+    clearscreen(x - 1, y - 1, 4, 3)
 
     font = pygame.font.SysFont(None, 24)
     pytext = font.render(text, True, (255, 255, 255))
@@ -1049,12 +1248,21 @@ def createsettingboxes():
     for box in settingvariables:
         setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
 
+controlcolors = [RED, BLUE]
+def createcontrolboxes():
+    for controlindex, control in enumerate(controls):
+        setcontrolbutton(controls[control], "deprecated", 22, controlindex, controlcolors[controlindex % 2], 18)
+
 def createhelpboxes():
     for box in helpvariables:
         setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
 
 def createtruefalse():
     for truefalse in truevariables:
+        truefalsebutton(truefalse[0], truefalse[1], truefalse[2], truefalse[3])
+
+def settingtruefalse():
+    for truefalse in settingtruevariables:
         truefalsebutton(truefalse[0], truefalse[1], truefalse[2], truefalse[3])
 
 def setezsfinderbutton(text, subtext, x, y, color, size):
@@ -1067,6 +1275,17 @@ def setezsfinderbutton(text, subtext, x, y, color, size):
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
+
+def setcontrolbutton(text, subtext, x, y, color, size):
+    for i in range(4):
+        for j in range(1):
+            blockrenderer(x + i, j + y, color)
+
+    font = pygame.font.SysFont(None, size)
+    pytext = font.render(text, True, (255, 255, 255))
+    textwidth = pytext.get_width()
+    textheight = pytext.get_height()
+    s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (0.5 *  blocksize) - textheight/2, blocksize, blocksize))
 
 def setqueuebutton():
     x = boardlength + 2
@@ -1100,9 +1319,13 @@ def set_variable(variable_name):
     window.title("Set Variable")
     window.geometry("300x100")  # Set window size to 300x100
 
+    print("Window initialized")
+
     # Create label
     label = tk.Label(window, text=f"Set the value of {variable_name}")
     label.pack()
+
+    print("Textbox inserted")
 
     # Create textbox
     textbox = tk.Entry(window)
@@ -1112,8 +1335,10 @@ def set_variable(variable_name):
         textbox.insert(-1, eval(variable_name))
 
     textbox.pack()
+    print("Inserted value")
     # Function to set the variable and close the window
     def set_value():
+        print("setting value")
         if(variable_name == "loadfumen"):
             loadfumen(textbox.get())
         else:
@@ -1122,6 +1347,7 @@ def set_variable(variable_name):
 
         window.destroy()
         root.quit()
+        print("done")
 
     # Bind Enter key to set_value function
     textbox.bind('<Return>', lambda event: set_value())
@@ -1129,40 +1355,53 @@ def set_variable(variable_name):
     # Protocol handler for window close event
     window.protocol("WM_DELETE_WINDOW", set_value)
 
+    print("starting  the main loop")
     window.mainloop()  # Start the tkinter event loop
+    root.destroy()
 
-def set_setting_variable(variable_name):
-    settingsfile = open("config.txt")
+def save_key_input(key_name):
+    global controls
     root = tk.Tk()
     root.withdraw()  # Hide the tkinter window
 
     # Create tkinter window with larger size
     window = tk.Toplevel()
-    window.title("Set Variable")
+    window.title("Save Key Input")
     window.geometry("300x100")  # Set window size to 300x100
 
     # Create label
-    label = tk.Label(window, text=f"Set the value of {variable_name}")
+    label = tk.Label(window, text=f"Set the value of {controls[key_name]}")
     label.pack()
 
-    # Create textbox
-    textbox = tk.Entry(window)
-    textbox.insert(-1, eval(variable_name))
+    valuern = tk.Label(window, text=f"Currentvalue is {pygame.key.name(key_name).upper()}")
+    valuern.pack()
 
-    textbox.pack()
-    # Function to set the variable and close the window
-    def set_value():
-        global_dict = globals()  # Get the global dictionary
-        global_dict[variable_name] = textbox.get()  # Set the variable in the global dictionary
+    # Function to save the key input and close the window
+    def save_input(event):
+        global controls
 
+        if(len(event.keysym) == 1):
+            key_input = eval(f"pygame.K_{event.keysym}")
+        else:
+            key_input = eval(f"pygame.K_{event.keysym.upper()}")
+
+        if(key_input in controls):
+            error = tk.Label(window, text=f"This control is already in use, please dont do that")
+            error.pack()
+        else:
+            controls[key_input] = controls.pop(key_name)
+            window.destroy()
+            root.quit()
+
+    def quit():
         window.destroy()
         root.quit()
 
-    # Bind Enter key to set_value function
-    textbox.bind('<Return>', lambda event: set_value())
+    # Bind key press event to save_input function
+    window.bind('<KeyPress>', save_input)
 
     # Protocol handler for window close event
-    window.protocol("WM_DELETE_WINDOW", set_value)
+    window.protocol("WM_DELETE_WINDOW", lambda: quit())
 
     window.mainloop()  # Start the tkinter event loop
 
@@ -1243,7 +1482,7 @@ def set_hold():
 
     window.mainloop()  # Start the tkinter event loop
 
-lastcommand = "No command yet"
+lastcommand = "QwQtris - not a ripoff of anything QwQ"
 
 #submission box jumping point
 ezsfinderboxx = boardlength + 8
@@ -1258,11 +1497,13 @@ ezsfindervariables = [
 ]
 
 helpvariables = [
-["PC finder", helpbuttonboxx, 0, BLUE, "pc_finder"]
+["Pure PC finder", helpbuttonboxx, 0, BLUE, "pc_finder"],
+["DPC save finder", helpbuttonboxx, 2, BLUE, "dpc_save_finder"]
 ]
 
 if(loadsetups):
-    helpvariables.append(["Setup Finder", helpbuttonboxx, 2, MAGENTA, "setup_finder"])
+    helpvariables.append(["Setup Finder", helpbuttonboxx + 4, 0, MAGENTA, "setup_finder"])
+    helpvariables.append(["DPC Finder", helpbuttonboxx + 4, 2, MAGENTA, "dpc_finder"])
 
 textboxx = 22
 textvariables = [
@@ -1294,7 +1535,11 @@ settingvariables = [
 ["DAS", settingvariablesx, 0, ORANGE, "das"],
 ["ARR", settingvariablesx, 2, BLUE, "arr"],
 ["SDL", settingvariablesx, 4, ORANGE, "softdropdelay"],
-["SDS", settingvariablesx, 6, ORANGE, "softdropspeed"],
+["SDS", settingvariablesx, 6, BLUE, "softdropspeed"],
+]
+
+settingtruevariables = [
+["Setup Finder", settingvariablesx + 1, 10, loadsetups],
 ]
 
 def drawlastcommand():
@@ -1315,8 +1560,8 @@ def drawallpieces():
     global board, lastdrawn
     clearscreen(0, 0, boardlength + 6, boardheight + 2)
     clearscreen(0, -1, 2, 1)
-    #drawlastcommand()
     drawghostpiece()
+    drawlastcommand()
 
     statx = -5
     staty = 5
@@ -1434,7 +1679,7 @@ clock = pygame.time.Clock()
 
 # Set the font for the fps display
 font = pygame.font.SysFont(None, 30)
-menu = 0
+menu = 4
 
 def createmenu():
     clearscreen(17.5, -4, 8.5, 16)
@@ -1448,6 +1693,8 @@ def createmenu():
 
     elif(menu == 2):
         createsettingboxes()
+        createcontrolboxes()
+        settingtruefalse()
 
 createmenu()
 
@@ -1456,6 +1703,8 @@ createmenuboxes()
 setqueuebutton()
 setheldpiece()
 savestate()
+
+tap = False
 
 while running:
     presseddown = pygame.key.get_pressed()
@@ -1482,68 +1731,88 @@ while running:
             if(key in keyspressed):
                 keyspressed.remove(key)
 
-    for event in pygame.event.get():
-        if pygame.mouse.get_pressed()[0]:
-            pos = list(pygame.mouse.get_pos())
-            pos[0] = (pos[0] - startx) // blocksize
-            pos[1] = (pos[1] - starty) // blocksize
+    if pygame.mouse.get_pressed()[0]:
+        pos = list(pygame.mouse.get_pos())
+        pos[0] = (pos[0] - startx) // blocksize
+        pos[1] = (pos[1] - starty) // blocksize
 
-            if(pos[0] >= 0 and pos[0] < boardlength and pos[1] >= 0 and pos[1] < boardheight):
-                nopieceboard[pos[1]][pos[0]] = tetrominoes[piece]
+        if(pos[0] >= 0 and pos[0] < boardlength and pos[1] >= 0 and pos[1] < boardheight):
+            nopieceboard[pos[1]][pos[0]] = tetrominoes[piece]
 
-            if(pos[0] == boardlength + xlocation and pos[1] >= 0 and pos[1] < len(pieces)):
-                piece = pos[1]
+        if(pos[0] == boardlength + xlocation and pos[1] >= 0 and pos[1] < len(pieces)):
+            piece = pos[1]
 
-            if(menu == 1):
-                for box in textvariables:
-                    if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
-                        set_variable(box[4])
+        if(menu == 1):
+            for box in textvariables:
+                if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
+                    set_variable(box[4])
 
-                for box in ezsfindervariables:
-                    if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
-                        fumen = outputcode()
-                        exec(f"{box[4]}()")
+            for box in ezsfindervariables:
+                if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
+                    fumen = outputcode()
+                    exec(f"{box[4]}()")
 
+            if(not tap):
                 for box in truevariables:
                     if(pos[0] >= box[1] and pos[0] <= box[1] + 1 and pos[1] == box[2]):
                         box[3] = not box[3]
+                        initial_b2b = not initial_b2b
                         createtruefalse()
 
-            for boxindex, box in enumerate(menuvariables):
+        for boxindex, box in enumerate(menuvariables):
+            if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
+                menu = boxindex
+                createmenu()
+
+        if(menu == 0):
+            for box in helpvariables:
                 if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
-                    menu = boxindex
-                    createmenu()
+                    fumen = outputcode()
+                    exec(f"{box[4]}()")
 
-            if(mode == 0):
-                for box in helpvariables:
-                    if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
-                        fumen = outputcode()
-                        exec(f"{box[4]}()")
+        if(pos[0] >= boardlength + 2 and pos[0] <= boardlength + 5 and pos[1] >= -2 and pos[1] <= -1):
+            set_queue()
 
-            if(pos[0] >= boardlength + 2 and pos[0] <= boardlength + 5 and pos[1] >= -2 and pos[1] <= -1):
-                set_queue()
+        if(pos[0] >= -4 and pos[0] <= -1 and pos[1] >= -5 and pos[1] <= -4):
+            set_hold()
 
-            if(pos[0] >= -4 and pos[0] <= -1 and pos[1] >= -5 and pos[1] <= -4):
-                set_hold()
+        if(menu == 2):
+            for box in settingvariables:
+                if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
+                    set_variable(box[4])
 
-            if(mode == 2):
-                for box in settingvariables:
-                    if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
-                        set_variable(box[4])
+            if(pos[0] >= 22 and pos[0] <= 26 and pos[1] >= 0 and pos[1] < boardheight):
+                for iindex, i in enumerate(controls):
+                    if(controls[i] == controlslist[pos[1]]):
+                        save_key_input(i)
+                        break
 
-            drawallpieces()
+            if(not tap):
+                for box in settingtruevariables:
+                    if(pos[0] >= box[1] and pos[0] <= box[1] + 1 and pos[1] == box[2]):
+                        loadsetups = not loadsetups
+                        box[3] = not box[3]
+                        settingtruefalse()
 
-        if pygame.mouse.get_pressed()[2]:
-            pos = list(pygame.mouse.get_pos())
-            pos[0] = (pos[0] - startx) // blocksize
-            pos[1] = (pos[1] - starty) // blocksize
+        drawallpieces()
+        tap = True
 
-            if(pos[0] >= 0 and pos[0] < boardlength and pos[1] >= 0 and pos[1] < boardheight):
-                nopieceboard[pos[1]][pos[0]] = defaultboardcharacter
+    else:
+        tap = False
 
-            drawallpieces()
+    if pygame.mouse.get_pressed()[2]:
+        pos = list(pygame.mouse.get_pos())
+        pos[0] = (pos[0] - startx) // blocksize
+        pos[1] = (pos[1] - starty) // blocksize
 
+        if(pos[0] >= 0 and pos[0] < boardlength and pos[1] >= 0 and pos[1] < boardheight):
+            nopieceboard[pos[1]][pos[0]] = defaultboardcharacter
+
+        drawallpieces()
+
+    for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            savecontrols()
             running = False
 
     # Tick the clock

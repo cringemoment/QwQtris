@@ -2,19 +2,6 @@
 
 An attempt at a more pc-orientated client
 
-## Requirements
-**Java**
-
-**Python modules**
- * Random
- * Keyboard
- * Pygame
- * Itertools
- * BeautifulSoup
- 
-**Node modules**
- * Tetris-fumen
-
 ## Features
 * Fumen importing/exporting
 * Some basic tetris research shorthands

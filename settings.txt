@@ -1,0 +1,11 @@
+1073741904-move_left
+1073741903-move_right
+119-reset
+1073741906-cw_rotate
+115-ccw_rotate
+100-full_rotate
+120-harddrop
+1073741905-softdrop
+122-hold
+116-undo
+121-redo
