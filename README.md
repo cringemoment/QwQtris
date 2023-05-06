@@ -2,6 +2,15 @@
 
 An attempt at a more pc-orientated client
 
+## Requirements
+**Java**
+## Node
+* Tetris-fumen
+* sfinder-minimals
+## Python**
+*pygame
+*beautifulsoup
+
 ## Features
 * Fumen importing/exporting
 * Some basic tetris research shorthands
