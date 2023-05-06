@@ -6,7 +6,7 @@ An attempt at a more pc-orientated client
 ## Java
 ## Node
 * Tetris-fumen
-* sfinder-minimals
+* sfinder-strict-minimal
 * yargs
 ## Python
 * pygame (Make sure this one is up to date)
