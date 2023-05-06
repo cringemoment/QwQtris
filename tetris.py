@@ -457,7 +457,7 @@ if(loadsetups):
         allsetups[i]["cover"] = eval(open(f"konbini/setups{i}cover.json").read())
         print(f"PC number {i} loaded")
 
-if(loaddpc):
+if(loadsetups):
     dpcsetups = open("konbini/dpc.txt").read().splitlines()
     dpccover = eval(open("konbini/dpccover.json").read())
     print(f"DPC setups loaded")
