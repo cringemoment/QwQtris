@@ -8,8 +8,8 @@ An attempt at a more pc-orientated client
 * Tetris-fumen
 * sfinder-minimals
 ## Python**
-*pygame
-*beautifulsoup
+* pygame (Make sure this one is up to date)
+* beautifulsoup
 
 ## Features
 * Fumen importing/exporting
