@@ -145,7 +145,7 @@ def loadfumen(fumen):
     if(not fumen == ""):
         system(f"node decode.js {fumen} > ezsfinder.txt")
         tempboard = open("ezsfinder.txt").read()
-        tempboard = tempboard.replace("_", defaultboardcharacter)
+        tempboard = tempboard.replace("_", defaultboardcharacter).replace("X", "G")
         tempboard = tempboard.splitlines()
         fulllengthboard = []
         if(tempboard == ['']):
@@ -178,7 +178,7 @@ pygame.init()
 s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
 s.fill((20, 20, 20))
 
-debug = False
+debug = True
 def system(command):
     global lastcommand
     if(debug):
@@ -279,7 +279,7 @@ def evaluatedpcsave(save):
     "J" : 1,
     "L" : 1,
     "S" : 2,
-    "Z" : 3,
+    "Z" : 2,
     "I" : 3,
     "O" : 4
     }
@@ -312,11 +312,8 @@ def pc_finder():
                 count += 1
 
         if count % 4 == 0 and i <= highestvalue: # check if count is divisible by 4
-            print(i)
             highestvalue = boardheight - i
             break
-
-    print(highestvalue)
 
     allpieces = currentpiece + holdpiece + ''.join(queue)
 
@@ -388,11 +385,8 @@ def dpc_save_finder():
                 count += 1
 
         if count % 4 == 0 and i <= highestvalue: # check if count is divisible by 4
-            print(i)
             highestvalue = boardheight - i
             break
-
-    print(highestvalue)
 
     allpieces = currentpiece + holdpiece + ''.join(queue)
 
@@ -437,6 +431,81 @@ def dpc_save_finder():
             saves.append([solutionfumen, leftover, evaluatedpcsave(leftover)])
 
         saves.sort(key=lambda x: int(x[2]) * -1)
+        visualizeboard = saves[0][0]
+
+    else:
+        lastcommand = "No solution, sorry"
+
+def getscore(queue, clear, fumen):
+    system(f"java -jar sfinder.jar cover -t {fumen} -p {queue} > ezsfinder.txt")
+    system(f'node avg_score_ezsfinderversion.js queue={queue} initialB2B={initial_b2b} initialCombo={initial_combo} b2bEndBonus={b2b_end_bonus} fileType=cover fileName="output/cover.csv" > ezsfinder.txt')
+    score = open("ezsfinder.txt").read().splitlines()
+    printingscores = True
+    for v, i in enumerate(score):
+        if("average_covered_score" in i):
+            return(round(float(i.split(": ")[1][:-1]) / int(score[-1]) * int(score[v + 1].split(": ")[1][:-1]), 2))
+
+def cat_finder():
+    global visualizeboard, lastcommand
+    count = 0
+    startingheight = boardheight - 2
+    highestvalue = startingheight
+
+    for rowindex, row in enumerate(nopieceboard):
+        if(highestvalue != startingheight):
+            break
+        for value in row:
+            if(value != defaultboardcharacter and rowindex <= startingheight):
+                highestvalue = rowindex
+                break
+
+    count = 0
+
+    for i in range(boardheight - 1, -1, -1):
+        for j in range(boardlength):
+            if nopieceboard[i][j] == defaultboardcharacter:
+                count += 1
+
+        if count % 4 == 0 and i <= highestvalue: # check if count is divisible by 4
+            highestvalue = boardheight - i
+            break
+
+    allpieces = currentpiece + holdpiece + ''.join(queue)
+
+    if(len(bag) == 1):
+        allpieces += bag[0]
+
+    system(f"java -jar sfinder.jar path -t {fumen} -p {allpieces} --clear {highestvalue} > ezsfinder.txt")
+
+    with open('output/path_unique.html', 'r', encoding = "utf-8") as f:
+        html = f.read()
+
+    soup = BeautifulSoup(html, 'html.parser')
+
+    solutions = []
+
+    for link in soup.find_all('a')[1:]:
+        href = link.get('href')
+        if href.startswith('http://fumen.zui.jp/?'):
+            pieces = ''.join([i[0] for i in link.get_text().split(' ')])
+            solutions.append([href, pieces])
+
+    saves = []
+
+    if(solutions != []):
+        for solution in solutions:
+            solutionfumen = solution[0]
+            piecesused = solution[1]
+
+            system(f"node glueFumens.js {solutionfumen} > ezsfinder.txt")
+            glued = open("ezsfinder.txt").read().replace("\n", "")
+
+            solutionpiecesused = ','.join([char for char in piecesused])
+
+            saves.append([solutionfumen, getscore(solutionpiecesused, highestvalue, glued)])
+
+        saves.sort(key=lambda x: int(x[1]) * -1)
+
         visualizeboard = saves[0][0]
 
     else:
@@ -744,7 +813,6 @@ pieces = {
     }
 }
 
-
 def loadtable(file):
     cardinals = "NESW"
     kicktable = open(file).read().splitlines()
@@ -953,8 +1021,8 @@ def tabulatescore(linescleared, activateb2b):
     if(combo == True):
         combocount += 1
 
-    clearscreen(-5, 0, 4, 4)
-    writetext(-5, 0, word, 20)
+    clearscreen(-5, 0, 6, 4)
+    writetext(-5, 0, word, 30)
 
     return(int(currentscore))
 
@@ -1498,7 +1566,8 @@ ezsfindervariables = [
 
 helpvariables = [
 ["Pure PC finder", helpbuttonboxx, 0, BLUE, "pc_finder"],
-["DPC save finder", helpbuttonboxx, 2, BLUE, "dpc_save_finder"]
+["DPC save finder", helpbuttonboxx, 2, BLUE, "dpc_save_finder"],
+["Score finder", helpbuttonboxx, 4, BLUE, "cat_finder"]
 ]
 
 if(loadsetups):
@@ -1679,7 +1748,7 @@ clock = pygame.time.Clock()
 
 # Set the font for the fps display
 font = pygame.font.SysFont(None, 30)
-menu = 4
+menu = 0
 
 def createmenu():
     clearscreen(17.5, -4, 8.5, 16)
