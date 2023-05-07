@@ -437,6 +437,8 @@ def dpc_save_finder():
         lastcommand = "No solution, sorry"
 
 def getscore(queue, clear, fumen):
+    #coverfile = open("output/cover.csv", "w")
+    #coverfile.write(f"sequence,{fumen}\n{''.join(queue.split(','))},O")
     system(f"java -jar sfinder.jar cover -t {fumen} -p {queue} > ezsfinder.txt")
     system(f'node avg_score_ezsfinderversion.js queue={queue} initialB2B={initial_b2b} initialCombo={initial_combo} b2bEndBonus={b2b_end_bonus} fileType=cover fileName="output/cover.csv" > ezsfinder.txt')
     score = open("ezsfinder.txt").read().splitlines()
@@ -507,6 +509,7 @@ def cat_finder():
         saves.sort(key=lambda x: int(x[1]) * -1)
 
         visualizeboard = saves[0][0]
+        print(saves)
 
     else:
         lastcommand = "No solution, sorry"
@@ -1427,6 +1430,64 @@ def set_variable(variable_name):
     window.mainloop()  # Start the tkinter event loop
     root.destroy()
 
+KEYSYM_TO_KEY = {
+    "Alt_L": pygame.K_LALT,
+    "Alt_R": pygame.K_RALT,
+    "BackSpace": pygame.K_BACKSPACE,
+    "Caps_Lock": pygame.K_CAPSLOCK,
+    "Control_L": pygame.K_LCTRL,
+    "Control_R": pygame.K_RCTRL,
+    "Delete": pygame.K_DELETE,
+    "Down": pygame.K_DOWN,
+    "End": pygame.K_END,
+    "Escape": pygame.K_ESCAPE,
+    "F1": pygame.K_F1,
+    "F2": pygame.K_F2,
+    "F3": pygame.K_F3,
+    "F4": pygame.K_F4,
+    "F5": pygame.K_F5,
+    "F6": pygame.K_F6,
+    "F7": pygame.K_F7,
+    "F8": pygame.K_F8,
+    "F9": pygame.K_F9,
+    "F10": pygame.K_F10,
+    "F11": pygame.K_F11,
+    "F12": pygame.K_F12,
+    "Home": pygame.K_HOME,
+    "Insert": pygame.K_INSERT,
+    "KP_0": pygame.K_KP0,
+    "KP_1": pygame.K_KP1,
+    "KP_2": pygame.K_KP2,
+    "KP_3": pygame.K_KP3,
+    "KP_4": pygame.K_KP4,
+    "KP_5": pygame.K_KP5,
+    "KP_6": pygame.K_KP6,
+    "KP_7": pygame.K_KP7,
+    "KP_8": pygame.K_KP8,
+    "KP_9": pygame.K_KP9,
+    "KP_Add": pygame.K_KP_PLUS,
+    "KP_Decimal": pygame.K_KP_PERIOD,
+    "KP_Divide": pygame.K_KP_DIVIDE,
+    "KP_Enter": pygame.K_KP_ENTER,
+    "KP_Multiply": pygame.K_KP_MULTIPLY,
+    "KP_Subtract": pygame.K_KP_MINUS,
+    "Left": pygame.K_LEFT,
+    "Menu": pygame.K_MENU,
+    "Num_Lock": pygame.K_NUMLOCK,
+    "Page_Down": pygame.K_PAGEDOWN,
+    "Page_Up": pygame.K_PAGEUP,
+    "Pause": pygame.K_PAUSE,
+    "Print": pygame.K_PRINT,
+    "Right": pygame.K_RIGHT,
+    "Scroll_Lock": pygame.K_SCROLLLOCK,
+    "Shift_L": pygame.K_LSHIFT,
+    "Shift_R": pygame.K_RSHIFT,
+    "space": pygame.K_SPACE,
+    "Tab": pygame.K_TAB,
+    "Up": pygame.K_UP
+}
+
+
 def save_key_input(key_name):
     global controls
     root = tk.Tk()
@@ -1448,10 +1509,11 @@ def save_key_input(key_name):
     def save_input(event):
         global controls
 
-        if(len(event.keysym) == 1):
-            key_input = eval(f"pygame.K_{event.keysym}")
+        key = event.keysym
+        if(key in KEYSYM_TO_KEY):
+            key_input = KEYSYM_TO_KEY[key]
         else:
-            key_input = eval(f"pygame.K_{event.keysym.upper()}")
+            key_input = eval(f"pygame.K_{event.keysym}")
 
         if(key_input in controls):
             error = tk.Label(window, text=f"This control is already in use, please dont do that")
