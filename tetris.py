@@ -436,10 +436,30 @@ def dpc_save_finder():
     else:
         lastcommand = "No solution, sorry"
 
+def hold_reorders(queue):
+    if len(queue) <= 1:
+        return set(queue)  # base case
+
+    result = set()
+
+    a = hold_reorders(queue[1:])  # use first piece, work on the 2nd-rest
+    for part in a:
+        result.add(queue[0] + part)
+
+    b = hold_reorders(queue[0] + queue[2:])  # use second piece, work on 1st + 3rd-rest
+    for part in b:
+        result.add(queue[1] + part)
+
+    return list(result)
+
 def getscore(queue, clear, fumen):
-    #coverfile = open("output/cover.csv", "w")
-    #coverfile.write(f"sequence,{fumen}\n{''.join(queue.split(','))},O")
-    system(f"java -jar sfinder.jar cover -t {fumen} -p {queue} > ezsfinder.txt")
+    holdqueues = hold_reorders(queue.replace(",", ""))
+    queuefeed = open("queuefeed.txt", "w")
+    for i in holdqueues:
+        queuefeed.write(i + "\n")
+    queuefeed.close()
+
+    system(f"java -jar sfinder.jar cover -t {fumen} -pp queuefeed.txt > ezsfinder.txt")
     system(f'node avg_score_ezsfinderversion.js queue={queue} initialB2B={initial_b2b} initialCombo={initial_combo} b2bEndBonus={b2b_end_bonus} fileType=cover fileName="output/cover.csv" > ezsfinder.txt')
     score = open("ezsfinder.txt").read().splitlines()
     printingscores = True
@@ -509,7 +529,6 @@ def cat_finder():
         saves.sort(key=lambda x: int(x[1]) * -1)
 
         visualizeboard = saves[0][0]
-        print(saves)
 
     else:
         lastcommand = "No solution, sorry"
@@ -1484,7 +1503,8 @@ KEYSYM_TO_KEY = {
     "Shift_R": pygame.K_RSHIFT,
     "space": pygame.K_SPACE,
     "Tab": pygame.K_TAB,
-    "Up": pygame.K_UP
+    "Up": pygame.K_UP,
+    "quoteleft": pygame.K_BACKQUOTE
 }
 
 
