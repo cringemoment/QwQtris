@@ -10,7 +10,8 @@ An attempt at a more pc-orientated client
 * yargs
 ## Python
 * pygame (Make sure this one is up to date)
-* beautifulsoup
+* beautifulsoup (pip install bs4)
+* tkinter sometimes apparently (pip install python3-tk on linux apparently)
 
 ## Features
 * Fumen importing/exporting
