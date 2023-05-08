@@ -19,6 +19,18 @@ startingseed = randint(-10000, 100000000)
 piecesplaced = 0
 controls = {}
 
+#Define color codes
+RED = (205, 55, 50)
+GREEN = (51, 204, 51)
+YELLOW = (204, 204, 51)
+BLUE = (51, 51, 204)
+MAGENTA = (204, 51, 204)
+CYAN = (51, 204, 204)
+ORANGE = (204, 153, 51)
+RESET = (10, 10, 20)
+GARBAGE = (204, 204, 204)
+BLACK = (0, 0, 0)
+
 configfile = open("settings.txt").read().splitlines()
 if(configfile == []):
     controls = {
@@ -176,7 +188,7 @@ extray = 10
 
 pygame.init()
 s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
-s.fill((20, 20, 20))
+s.fill(RESET)
 
 debug = True
 def system(command):
@@ -686,18 +698,6 @@ def dpc_finder():
         return False
 
     visualizeboard = unglue(pcsetups[pcsetupcovers[pckeypieces][0]])
-
-#Define color codes
-RED = (205, 55, 50)
-GREEN = (51, 204, 51)
-YELLOW = (204, 204, 51)
-BLUE = (51, 51, 204)
-MAGENTA = (204, 51, 204)
-CYAN = (51, 204, 204)
-ORANGE = (204, 153, 51)
-RESET = (10, 10, 20)
-GARBAGE = (204, 204, 204)
-BLACK = (0, 0, 0)
 
 scorevalues = {
 0 : 0,
