@@ -27,7 +27,8 @@ BLUE = (51, 51, 204)
 MAGENTA = (204, 51, 204)
 CYAN = (51, 204, 204)
 ORANGE = (204, 153, 51)
-RESET = (10, 10, 20)
+RESET = (0, 10, 20)
+TETRISBOARD = (0, 0, 5)
 GARBAGE = (204, 204, 204)
 BLACK = (0, 0, 0)
 
@@ -1251,12 +1252,20 @@ def grid(startx, starty, boardlength, boardheight, blocksize, blockwidth):
 
 def blockrenderer(x, y, color, smaller = False):
     global startx, starty, blocksize, blockwidth
+    """
     if(smaller):
         block = pygame.Rect(startx + (x * blocksize) + blocksize // 4, starty + (y * blocksize) + blocksize // 4, blocksize // 2, blocksize // 2)
     else:
         block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize)
 
     pygame.draw.rect(s, color, block, blocksize - 1)
+    """
+    block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize)
+
+    if(smaller):
+        pygame.draw.rect(s, tuple([i + (sum(color)//3 - i)/2 for i in list(color)]), block, blocksize - 1)
+    else:
+        pygame.draw.rect(s, color, block, blocksize - 1)
 
 def writetext(x, y, text, size):
     font = pygame.font.SysFont('font/ABeeZee-Regular.otf', size)
@@ -1380,9 +1389,7 @@ def setcontrolbutton(text, subtext, x, y, color, size):
 def setqueuebutton():
     x = boardlength + 2
     y = -2
-    for i in range(4):
-        for j in range(2):
-            blockrenderer(x + i, y + j, RESET)
+    clearscreen(x, y, 4, 2, RESET)
 
     font = pygame.font.SysFont(None, 24)
     pytext = font.render("Set game queue", True, (255, 255, 255))
@@ -1665,10 +1672,6 @@ textvariables = [
 ["Load fumen", textboxx, 8, ORANGE, "loadfumen"]
 ]
 
-settingvariables = [
-["Set fed queue", textboxx, 0, ORANGE, "sfinder_fed_queue"]
-]
-
 truefalsex = 18
 truevariables = [
 ["Initial b2b", truefalsex, -2, initial_b2b],
@@ -1690,7 +1693,7 @@ settingvariables = [
 ]
 
 settingtruevariables = [
-["Setup Finder", settingvariablesx + 1, 10, loadsetups],
+["Load Setups", settingvariablesx + 1, 10, loadsetups],
 ]
 
 def drawlastcommand():
@@ -1703,14 +1706,14 @@ def drawlastcommand():
     pygame.draw.rect(s, RESET, block)
     s.blit(pytext, (startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize))
 
-def clearscreen(x, y, width, height):
+def clearscreen(x, y, width, height, color = RESET):
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), width * blocksize, height * blocksize)
-    pygame.draw.rect(s, RESET, block)
+    pygame.draw.rect(s, color, block)
 
 def drawallpieces():
     global board, lastdrawn
     clearscreen(0, 0, boardlength + 6, boardheight + 2)
-    clearscreen(0, -1, 2, 1)
+    clearscreen(0, 0, boardlength, boardheight, TETRISBOARD)
     drawghostpiece()
     drawlastcommand()
 
