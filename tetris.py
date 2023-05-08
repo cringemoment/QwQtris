@@ -9,7 +9,7 @@ import itertools
 from bs4 import BeautifulSoup
 
 #if you're looking to modify something, it's probably here
-das = 83
+das = 50
 softdropdelay = 200
 
 startingseed = randint(-100000, 1000000)
@@ -18,13 +18,13 @@ piecesplaced = 0
 controls = {
 "left" : "move_left",
 "right" : "move_right",
-"w" : "reset",
+"r" : "reset",
 "up" : "clockwise_rotate",
-"s" : "counterlockwise_rotate",
-"d" : "full_rotate",
-"x" : "harddrop",
+"z" : "counterlockwise_rotate",
+"x" : "full_rotate",
+"space" : "harddrop",
 "down" : "softdrop",
-"z" : "hold",
+"c" : "hold",
 "t" : "undo",
 "y" : "redo"
 }
@@ -340,18 +340,18 @@ def setup_finder():
 
 pygame.init()
 s = pygame.display.set_mode((boardlength * blocksize + 10 * blocksize + 600, boardheight * blocksize + 8 * blocksize))
-s.fill((20, 20, 20))
+s.fill((10, 10, 20))
 
 #Define color codes
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-YELLOW = (255, 255, 0)
-BLUE = (0, 0, 255)
-MAGENTA = (255, 0, 255)
-CYAN = (0, 255, 255)
-ORANGE = (255, 100, 0)
-RESET = (20, 20, 20)
-GARBAGE = (128, 128, 128)
+RED = (205, 55, 50)
+GREEN = (51, 204, 51)
+YELLOW = (204, 204, 51)
+BLUE = (51, 51, 204)
+MAGENTA = (204, 51, 204)
+CYAN = (51, 204, 204)
+ORANGE = (204, 153, 51)
+RESET = (10, 10, 20)
+GARBAGE = (204, 204, 204)
 BLACK = (0, 0, 0)
 
 scorevalues = {
@@ -851,7 +851,7 @@ def grid(startx, starty, boardlength, boardheight, blocksize, blockwidth):
     for i in range(startx, startx + (boardlength * blocksize), blocksize):
         for j in range(starty, starty + (boardheight * blocksize), blocksize):
             rect = pygame.Rect(i, j, blocksize, blocksize)
-            pygame.draw.rect(s, (200, 200, 200), rect, blockwidth)
+            pygame.draw.rect(s, (51, 51, 51), rect, blockwidth)
 
 def blockrenderer(x, y, color, smaller = False):
     global startx, starty, blocksize, blockwidth
@@ -979,7 +979,7 @@ def set_variable(variable_name):
     # Create tkinter window with larger size
     window = tk.Toplevel()
     window.title("Set Variable")
-    window.geometry("300x100")  # Set window size to 300x100
+    window.geometry("300x100") # Set window size to 300x100
 
     # Create label
     label = tk.Label(window, text=f"Set the value of {variable_name}")
