@@ -1,0 +1,36 @@
+# Setup Field
+[v115@vhG8BJ2kB5oB3lBTpBlrByxB]
+__________
+______Z___
+J____ZZ__I
+JJJSSZ___I
+OOSSTTT_LI
+OO___TLLLI
+
+Using hold: use
+Kicks: srs
+Drop: softdrop
+Mode: normal
+Max Softdrop Times: -1
+Max Clear Line Times: -1
+StartingB2B: 0
+Priority: no
+Last drop: 0
+Version: 1.42
+Searching patterns:
+  *p1,
+
+Searching pattern size ( no dup. ) = 7
+
+# Calculate
+  -> Stopwatch start
+     ... calculating
+     ... done
+  -> Stopwatch stop : avg.time = 16 ms [1 counts]
+
+# Output
+success:
+0.00 % [0/7]: http://fumen.zui.jp/?v115@vhG8BJ2kB5oB3lBTpBlrByxB
+>>>
+OR  = 0.00 % [0/7]
+AND = 0.00 % [0/7]

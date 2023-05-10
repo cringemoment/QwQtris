@@ -1,4 +1,30 @@
-ZZJJJSTTTL
-XZZJJSSLLL
-XXXJJJSTXX
-XXXXIIIIXX
+# Setup Field
+XXX_______
+XXX_______
+XXXX______
+XXXXXX____
+
+# Initialize / User-defined
+Max clear lines: 4
+Using hold: use
+Kicks: srs
+Drop: softdrop
+Searching patterns:
+  JSTTIJO
+
+# Initialize / System
+Version = 1.42
+Threads = 12
+Need Pieces = 6
+
+# Enumerate pieces
+Piece pop count = 7
+
+# Cache
+  -> Stopwatch start
+     ... done
+  -> Stopwatch stop : avg.time = 22 ms [1 counts]
+
+# Search
+  -> Stopwatch start
+     ... searching

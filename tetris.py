@@ -2,7 +2,7 @@ from random import choice, randint, seed
 import pygame
 from copy import deepcopy
 import time
-from os import system as ossystem
+from os import system as ossystem, getcwd
 import tkinter as tk
 import itertools
 from bs4 import BeautifulSoup
@@ -14,23 +14,23 @@ arr = 0
 softdropdelay = 0
 softdropspeed = 0
 loadsetups = False #Loading setups take ages so disable this if you don't want it
+boardlength = 10
+boardheight = 15
+defaultboardcharacter = "_"
+board = [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]
+nopieceboard = deepcopy(board)
+allboards = []
+startx = 180
+starty = 180
+blocksize = 32
+blockwidth = 1
+pygame.font.init()
+normalfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize - 14)
+statfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize - 12)
 
 startingseed = randint(-10000, 100000000)
 piecesplaced = 0
 controls = {}
-
-#Define color codes
-RED = (205, 55, 50)
-GREEN = (51, 204, 51)
-YELLOW = (204, 204, 51)
-BLUE = (51, 51, 204)
-MAGENTA = (204, 51, 204)
-CYAN = (51, 204, 204)
-ORANGE = (204, 153, 51)
-RESET = (0, 10, 20)
-TETRISBOARD = (0, 0, 5)
-GARBAGE = (204, 204, 204)
-BLACK = (0, 0, 0)
 
 configfile = open("settings.txt").read().splitlines()
 if(configfile == []):
@@ -173,23 +173,12 @@ def loadfumen(fumen):
         nopieceboard = deepcopy(fulllengthboard)
         drawallpieces()
 
-boardlength = 10
-boardheight = 15
-defaultboardcharacter = "_"
-board = [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]
-nopieceboard = deepcopy(board)
-allboards = []
-startx = 180
-starty = 180
-blocksize = 32
-blockwidth = 1
-
 extrax = 22
 extray = 10
 
 pygame.init()
 s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
-s.fill(RESET)
+s.fill((20, 20, 20))
 
 debug = True
 def system(command):
@@ -700,6 +689,18 @@ def dpc_finder():
 
     visualizeboard = unglue(pcsetups[pcsetupcovers[pckeypieces][0]])
 
+#Define color codes
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+YELLOW = (255, 255, 0)
+BLUE = (0, 0, 255)
+MAGENTA = (255, 0, 255)
+CYAN = (0, 255, 255)
+ORANGE = (255, 100, 0)
+RESET = (20, 20, 20)
+GARBAGE = (128, 128, 128)
+BLACK = (0, 0, 0)
+
 scorevalues = {
 0 : 0,
 1 : 100,
@@ -995,8 +996,12 @@ score = 0
 tspinkick = False
 gointob2b = 0
 
+lastpcpiececount = 0
+consecutivepcs = 0
+consecutiveb2bs = 0
+
 def tabulatescore(linescleared, activateb2b):
-    global combo, combocount, b2b
+    global combo, combocount, b2b, lastpcpiececount, consecutivepcs, consecutiveb2bs
 
     pced = False
 
@@ -1004,9 +1009,11 @@ def tabulatescore(linescleared, activateb2b):
 
     if(activateb2b == 2):
         currentscore = scorevalues["t" + str(linescleared)]
+        consecutiveb2bs += 1
 
     elif(activateb2b == 1):
         currentscore = scorevalues[linescleared] + 100
+        consecutiveb2bs += 1
 
     else:
         currentscore = scorevalues[linescleared]
@@ -1014,6 +1021,11 @@ def tabulatescore(linescleared, activateb2b):
     if(nopieceboard == [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]):
         currentscore += scorevalues["pc"]
         pced = True
+        consecutivepcs += 1
+        lastpcpiececount = piecesplaced
+
+    if(piecesplaced - lastpcpiececount > 10):
+        consecutivepcs = 0
 
     if(b2b == True):
         if(activateb2b > 0 or linescleared == 4):
@@ -1040,6 +1052,7 @@ def tabulatescore(linescleared, activateb2b):
 
     elif(linescleared > 0):
         b2b = False
+        consecutiveb2bs = 0
 
     if(combo == True):
         combocount += 1
@@ -1248,29 +1261,25 @@ def grid(startx, starty, boardlength, boardheight, blocksize, blockwidth):
     for i in range(startx, startx + (boardlength * blocksize), blocksize):
         for j in range(starty, starty + (boardheight * blocksize), blocksize):
             rect = pygame.Rect(i, j, blocksize, blocksize)
-            pygame.draw.rect(s, (51, 51, 51), rect, blockwidth)
+            pygame.draw.rect(s, (200, 200, 200), rect, blockwidth)
 
 def blockrenderer(x, y, color, smaller = False):
     global startx, starty, blocksize, blockwidth
-    """
     if(smaller):
         block = pygame.Rect(startx + (x * blocksize) + blocksize // 4, starty + (y * blocksize) + blocksize // 4, blocksize // 2, blocksize // 2)
     else:
         block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize)
 
     pygame.draw.rect(s, color, block, blocksize - 1)
-    """
-    block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize)
-
-    if(smaller):
-        pygame.draw.rect(s, tuple([i + (sum(color)//3 - i)/2 for i in list(color)]), block, blocksize - 1)
-    else:
-        pygame.draw.rect(s, color, block, blocksize - 1)
 
 def writetext(x, y, text, size):
-    font = pygame.font.SysFont('font/ABeeZee-Regular.otf', size)
     global startx, starty, blocksize, blockwidth
-    pytext = font.render(text, True, (255, 255, 255))
+    pytext = normalfont.render(text, True, (255, 255, 255))
+    s.blit(pytext, (startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize))
+
+def stattext(x, y, text, size):
+    global startx, starty, blocksize, blockwidth
+    pytext = statfont.render(text, True, (255, 255, 255))
     s.blit(pytext, (startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize))
 
 def drawinfopieces(x, y, piece):
@@ -1295,15 +1304,14 @@ def createcolorsquares():
 
 def createsettextboxes():
     for box in textvariables:
-        settextbutton(box[0], str(eval(box[4])), box[1], box[2], box[3], 24)
+        settextbutton(box[0], str(eval(box[4])), box[1], box[2], box[3])
 
-def settextbutton(text, subtext, x, y, color, size):
+def settextbutton(text, subtext, x, y, color):
     for i in range(4):
         for j in range(2):
             blockrenderer(x + i, j + y, color)
 
-    font = pygame.font.SysFont(None, size)
-    pytext = font.render(text, True, (255, 255, 255))
+    pytext = normalfont.render(text, True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
@@ -1317,8 +1325,7 @@ def grayoutboard():
 def truefalsebutton(text, x, y, value):
     clearscreen(x - 1, y - 1, 4, 3)
 
-    font = pygame.font.SysFont(None, 24)
-    pytext = font.render(text, True, (255, 255, 255))
+    pytext = normalfont.render(text, True, (255, 255, 255))
 
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
@@ -1337,15 +1344,15 @@ def truefalsebutton(text, x, y, value):
 
 def createsfinderboxes():
     for box in ezsfindervariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
 
 def createmenuboxes():
     for box in menuvariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
 
 def createsettingboxes():
     for box in settingvariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
 
 controlcolors = [RED, BLUE]
 def createcontrolboxes():
@@ -1354,7 +1361,7 @@ def createcontrolboxes():
 
 def createhelpboxes():
     for box in helpvariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
 
 def createtruefalse():
     for truefalse in truevariables:
@@ -1364,13 +1371,12 @@ def settingtruefalse():
     for truefalse in settingtruevariables:
         truefalsebutton(truefalse[0], truefalse[1], truefalse[2], truefalse[3])
 
-def setezsfinderbutton(text, subtext, x, y, color, size):
+def setezsfinderbutton(text, subtext, x, y, color):
     for i in range(4):
         for j in range(2):
             blockrenderer(x + i, j + y, color)
 
-    font = pygame.font.SysFont(None, size)
-    pytext = font.render(text, True, (255, 255, 255))
+    pytext = normalfont.render(text, True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
@@ -1380,8 +1386,8 @@ def setcontrolbutton(text, subtext, x, y, color, size):
         for j in range(1):
             blockrenderer(x + i, j + y, color)
 
-    font = pygame.font.SysFont(None, size)
-    pytext = font.render(text, True, (255, 255, 255))
+    font = pygame.font.Font(f'fonts\ComicMono.ttf',size)
+    pytext = normalfont.render(text, True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (0.5 *  blocksize) - textheight/2, blocksize, blocksize))
@@ -1389,10 +1395,11 @@ def setcontrolbutton(text, subtext, x, y, color, size):
 def setqueuebutton():
     x = boardlength + 2
     y = -2
-    clearscreen(x, y, 4, 2, RESET)
+    for i in range(4):
+        for j in range(2):
+            blockrenderer(x + i, y + j, RESET)
 
-    font = pygame.font.SysFont(None, 24)
-    pytext = font.render("Set game queue", True, (255, 255, 255))
+    pytext = normalfont.render("Set game queue", True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
@@ -1401,8 +1408,7 @@ def setheldpiece():
     x = -5
     y = -5
 
-    font = pygame.font.SysFont(None, 24)
-    pytext = font.render("Set the held piece", True, (255, 255, 255))
+    pytext = normalfont.render("Set held piece", True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
@@ -1654,9 +1660,9 @@ ezsfindervariables = [
 ]
 
 helpvariables = [
-["Pure PC finder", helpbuttonboxx, 0, BLUE, "pc_finder"],
-["DPC save finder", helpbuttonboxx, 2, BLUE, "dpc_save_finder"],
-["Score finder", helpbuttonboxx, 4, BLUE, "cat_finder"]
+["Pure PC save", helpbuttonboxx, 0, BLUE, "pc_finder"],
+["DPC save", helpbuttonboxx, 2, BLUE, "dpc_save_finder"],
+[":cat: solve", helpbuttonboxx, 4, BLUE, "cat_finder"]
 ]
 
 if(loadsetups):
@@ -1672,6 +1678,10 @@ textvariables = [
 ["Load fumen", textboxx, 8, ORANGE, "loadfumen"]
 ]
 
+settingvariables = [
+["Set fed queue", textboxx, 0, ORANGE, "sfinder_fed_queue"]
+]
+
 truefalsex = 18
 truevariables = [
 ["Initial b2b", truefalsex, -2, initial_b2b],
@@ -1680,7 +1690,7 @@ truevariables = [
 menubuttonx = 22
 menuvariables = [
 ["Help Tools", menubuttonx, 12, RED],
-["Quick Research", menubuttonx, 14, BLUE],
+["Research", menubuttonx, 14, BLUE],
 ["Settings", menubuttonx, 16, RED],
 ]
 
@@ -1693,44 +1703,50 @@ settingvariables = [
 ]
 
 settingtruevariables = [
-["Load Setups", settingvariablesx + 1, 10, loadsetups],
+["Setup Finder", settingvariablesx + 1, 10, loadsetups],
 ]
 
 def drawlastcommand():
     global textboxx
     x = -5
     y = 16
-    font = pygame.font.SysFont(None, 24)
-    pytext = font.render(lastcommand, True, (255, 255, 255))
+    pytext = normalfont.render(lastcommand, True, (255, 255, 255))
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), 20 * blocksize, 2 * blocksize)
     pygame.draw.rect(s, RESET, block)
     s.blit(pytext, (startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize))
 
-def clearscreen(x, y, width, height, color = RESET):
+def clearscreen(x, y, width, height):
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), width * blocksize, height * blocksize)
-    pygame.draw.rect(s, color, block)
+    pygame.draw.rect(s, RESET, block)
 
 def drawallpieces():
     global board, lastdrawn
     clearscreen(0, 0, boardlength + 6, boardheight + 2)
-    clearscreen(0, 0, boardlength, boardheight, TETRISBOARD)
+    clearscreen(0, -1, 2, 1)
     drawghostpiece()
     drawlastcommand()
 
     statx = -5
     staty = 5
-    statincrement = 0.5
-    statsize = 24
+    statincrement = 0.8
+    statsize = blocksize//4
 
     clearscreen(statx, 5, staty, 10)
-    writetext(statx, staty + statincrement, f"Score: {score}", statsize)
+    stattext(statx, staty + statincrement, f"Score", statsize)
+    stattext(statx, staty + statincrement * 2, "0" * max(8 - len(str(score)), 0) + str(score), statsize)
 
+    stattext(statx, staty + statincrement * 3, f"PPB", statsize)
     if(piecesplaced == 0):
-        writetext(statx, staty + statincrement * 2, f"PPB  : 0", statsize)
+        stattext(statx, staty + statincrement * 4, "0", statsize)
     else:
-        writetext(statx, staty + statincrement * 2, f"PPB  : {round(score/piecesplaced, 2)}", statsize)
-    writetext(statx, staty + statincrement * 3, f"Pieces Placed: {piecesplaced}", statsize)
-    writetext(statx, staty + statincrement * 4, f"PC Counter: {(piecesplaced * 5 % 7) + 1}", statsize)
+        stattext(statx, staty + statincrement * 4, str(round(score/piecesplaced, 2)) + "0" * max(8 - len(str(round(score/piecesplaced, 2))), 0), statsize)
+    stattext(statx, staty + statincrement * 5, f"Pieces Placed", statsize)
+    stattext(statx, staty + statincrement * 6, "0" * max(8 - len(str(piecesplaced)), 0) + str(piecesplaced), statsize)
+    stattext(statx, staty + statincrement * 7, f"Chain PCs", statsize)
+    stattext(statx, staty + statincrement * 8, "0" * max(8 - len(str(consecutivepcs)), 0) + str(consecutivepcs), statsize)
+    stattext(statx, staty + statincrement * 9, f"Chain B2B", statsize)
+    stattext(statx, staty + statincrement * 10, "0" * max(8 - len(str(consecutiveb2bs)), 0) + str(consecutiveb2bs), statsize)
+    #stattext(statx, staty + statincrement * 8, "0" * max(8 -len(str((piecesplaced * 5 % 7) + 1)), 0) + str((piecesplaced * 5 % 7) + 1), statsize)
 
     if(visualizeboard != ""):
         drawvisualizer(visualizeboard)
@@ -1832,7 +1848,7 @@ keyspressed = []
 clock = pygame.time.Clock()
 
 # Set the font for the fps display
-font = pygame.font.SysFont(None, 30)
+font = pygame.font.Font(f'fonts\ComicMono.ttf',30)
 menu = 0
 
 def createmenu():
