@@ -936,15 +936,15 @@ def drawvisualizer(loadfumen):
 
 def get_filled_rows(board):
     filled_rows = []
-    for row in board:
+    for rowindex, row in enumerate(board):
         if all(square != defaultboardcharacter for square in row):
-            filled_rows.append(board.index(row))
+            filled_rows.append(rowindex)
     return filled_rows
 
 def clear_filled_rows(board):
     global combo, score, combocount, b2b, gointob2b
     gointob2b = 0
-    filled_rows = get_filled_rows(board)
+    filled_rows = get_filled_rows(nopieceboard)
 
     if(currentpiece == "T"):
         facing = [[1, 0, 1],
@@ -1062,7 +1062,7 @@ def tabulatescore(linescleared, activateb2b):
 
     return(int(currentscore))
 
-ogbag = [char for char in "IOSZJLT"]
+ogbag = [char for char in "I"]
 bag = deepcopy(ogbag)
 
 def piecepick():
