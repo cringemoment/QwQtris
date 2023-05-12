@@ -20,17 +20,16 @@ defaultboardcharacter = "_"
 board = [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]
 nopieceboard = deepcopy(board)
 allboards = []
-startx = 180
-starty = 180
-blocksize = 32
+blocksize = 28
 blockwidth = 1
+startx = blocksize * 7
+starty = int(blocksize * 5.5)
 pygame.font.init()
-normalfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize - 14)
-statfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize - 12)
+normalfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 18//32)
+statfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 24//32)
 
-startingseed = randint(-10000, 100000000)
-piecesplaced = 0
-controls = {}
+extrax = 24
+extray = 10
 
 #Define color codes
 RED = (205, 55, 50)
@@ -44,6 +43,15 @@ RESET = (0, 10, 20)
 TETRISBOARD = (0, 0, 5)
 GARBAGE = (204, 204, 204)
 BLACK = (0, 0, 0)
+
+pygame.init()
+s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
+s.fill(RESET)
+pygame.display.set_caption("QwQtris")
+
+startingseed = randint(-10000, 100000000)
+piecesplaced = 0
+controls = {}
 
 configfile = open("settings.txt").read().splitlines()
 if(configfile == []):
@@ -145,7 +153,27 @@ def countpieces(string):
             count += 1
     return count
 
+def queuesplit(string):
+    bagmode = False
+    result = []
+    for char in string:
+        char = char.upper() if char in "ioszjlt" else char
+        if(not bagmode and char in "IOSZJLT"):
+            result.append(char)
+        if(char == "[" or char == "*"):
+            temp = ""
+            bagmode = True
+        if(bagmode == True):
+            temp += char
+        if(char == "!" or char in "0123456789"):
+            result.append(temp)
+            bagmode = False
+
+    result = ','.join(result)
+    return result
+
 def sfinder_all_permutations(input_str):
+    input_str = queuesplit(input_str)
     inputs = input_str.split(',')
 
     # Generate all permutations for each input
@@ -184,14 +212,7 @@ def loadfumen(fumen):
         nopieceboard = deepcopy(fulllengthboard)
         drawallpieces()
 
-extrax = 22
-extray = 10
-
-pygame.init()
-s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
-s.fill(RESET)
-
-debug = True
+debug = False
 def system(command):
     global lastcommand
     if(debug):
@@ -1427,7 +1448,7 @@ def setqueuebutton():
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
 
 def setheldpiece():
-    x = -5
+    x = statx
     y = -5
 
     pytext = normalfont.render("Set held piece", True, (255, 255, 255))
@@ -1583,7 +1604,6 @@ def save_key_input(key_name):
     window.mainloop()  # Start the tkinter event loop
 
 def set_queue():
-    print("setting queue")
     root = tk.Tk()
     root.withdraw()  # Hide the tkinter window
 
@@ -1733,17 +1753,18 @@ def clearscreen(x, y, width, height):
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), width * blocksize, height * blocksize)
     pygame.draw.rect(s, RESET, block)
 
+statx = -6
+staty = 5
+statincrement = 0.8
+statsize = blocksize//4
+
 def drawallpieces():
     global board, lastdrawn
+
     clearscreen(0, 0, boardlength + 6, boardheight + 2)
     clearscreen(0, -1, 2, 1)
     drawghostpiece()
     drawlastcommand()
-
-    statx = -5
-    staty = 5
-    statincrement = 0.8
-    statsize = blocksize//4
 
     clearscreen(statx, 5, staty, 10)
     stattext(statx, staty + statincrement, f"Score", statsize)
@@ -1967,7 +1988,7 @@ while running:
                 if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
                     set_variable(box[4])
 
-            if(pos[0] >= 22 and pos[0] <= 26 and pos[1] >= 0 and pos[1] < boardheight):
+            if(pos[0] >= 22 and pos[0] <= 26 and pos[1] >= 0 and pos[1] < len(controlslist)):
                 for iindex, i in enumerate(controls):
                     if(controls[i] == controlslist[pos[1]]):
                         save_key_input(i)
