@@ -2,7 +2,7 @@ from random import choice, randint, seed
 import pygame
 from copy import deepcopy
 import time
-from os import system as ossystem, getcwd
+from os import system as ossystem
 import tkinter as tk
 import itertools
 from bs4 import BeautifulSoup
@@ -20,16 +20,23 @@ defaultboardcharacter = "_"
 board = [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]
 nopieceboard = deepcopy(board)
 allboards = []
-blocksize = 28
+blocksize = 32
 blockwidth = 1
-startx = blocksize * 7
-starty = int(blocksize * 5.5)
-pygame.font.init()
-normalfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 18//32)
-statfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 24//32)
-
-extrax = 24
+extrax = 23
 extray = 10
+
+startx = blocksize * 6
+starty = blocksize * 6
+
+pygame.font.init()
+normalfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize - 16)
+statfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize - 12)
+
+pygame.init()
+s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
+startingseed = randint(-10000, 100000000)
+piecesplaced = 0
+controls = {}
 
 #Define color codes
 RED = (205, 55, 50)
@@ -44,14 +51,8 @@ TETRISBOARD = (0, 0, 5)
 GARBAGE = (204, 204, 204)
 BLACK = (0, 0, 0)
 
-pygame.init()
-s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
 s.fill(RESET)
-pygame.display.set_caption("QwQtris")
 
-startingseed = randint(-10000, 100000000)
-piecesplaced = 0
-controls = {}
 
 configfile = open("settings.txt").read().splitlines()
 if(configfile == []):
@@ -153,27 +154,7 @@ def countpieces(string):
             count += 1
     return count
 
-def queuesplit(string):
-    bagmode = False
-    result = []
-    for char in string:
-        char = char.upper() if char in "ioszjlt" else char
-        if(not bagmode and char in "IOSZJLT"):
-            result.append(char)
-        if(char == "[" or char == "*"):
-            temp = ""
-            bagmode = True
-        if(bagmode == True):
-            temp += char
-        if(char == "!" or char in "0123456789"):
-            result.append(temp)
-            bagmode = False
-
-    result = ','.join(result)
-    return result
-
 def sfinder_all_permutations(input_str):
-    input_str = queuesplit(input_str)
     inputs = input_str.split(',')
 
     # Generate all permutations for each input
@@ -531,41 +512,21 @@ def cat_finder():
     if(len(bag) == 1):
         allpieces += bag[0]
 
-    system(f"java -jar sfinder.jar path -t {fumen} -p {allpieces} --clear {highestvalue} > ezsfinder.txt")
+    piecesfile = open("queuefeed.txt", "w")
+    for holdqueue in hold_reorders(allpieces):
+        piecesfile.write(holdqueue)
+        piecesfile.write("\n")
 
-    with open('output/path_unique.html', 'r', encoding = "utf-8") as f:
-        html = f.read()
+    piecesfile.close()
 
-    soup = BeautifulSoup(html, 'html.parser')
 
-    solutions = []
+    system(f"java -jar sfinder.jar path -t {fumen} -pp queuefeed.txt --clear {highestvalue} --hold avoid --split yes -f csv -k pattern -o output/path.csv > ezsfinder.txt")
 
-    for link in soup.find_all('a')[1:]:
-        href = link.get('href')
-        if href.startswith('http://fumen.zui.jp/?'):
-            pieces = ''.join([i[0] for i in link.get_text().split(' ')])
-            solutions.append([href, pieces])
+    system(f"node best_score.js initialB2B={b2b} initialCombo={combo} queue={allpieces} > ezsfinder.txt")
+    bestsolve = open("ezsfinder.txt").read().replace("\n", "")
 
-    saves = []
-
-    if(solutions != []):
-        for solution in solutions:
-            solutionfumen = solution[0]
-            piecesused = solution[1]
-
-            system(f"node glueFumens.js {solutionfumen} > ezsfinder.txt")
-            glued = open("ezsfinder.txt").read().replace("\n", "")
-
-            solutionpiecesused = ','.join([char for char in piecesused])
-
-            saves.append([solutionfumen, getscore(solutionpiecesused, highestvalue, glued)])
-
-        saves.sort(key=lambda x: int(x[1]) * -1)
-
-        visualizeboard = saves[0][0]
-
-    else:
-        lastcommand = "No solution, sorry"
+    system(f"node unglueFumen.js --fu {bestsolve} > ezsfinder.txt")
+    visualizeboard = open("ezsfinder.txt").read().replace("\n", "")
 
 allsetups = {}
 
@@ -956,15 +917,15 @@ def drawvisualizer(loadfumen):
 
 def get_filled_rows(board):
     filled_rows = []
-    for rowindex, row in enumerate(board):
+    for row in board:
         if all(square != defaultboardcharacter for square in row):
-            filled_rows.append(rowindex)
+            filled_rows.append(board.index(row))
     return filled_rows
 
 def clear_filled_rows(board):
     global combo, score, combocount, b2b, gointob2b
     gointob2b = 0
-    filled_rows = get_filled_rows(nopieceboard)
+    filled_rows = get_filled_rows(board)
 
     if(currentpiece == "T"):
         facing = [[1, 0, 1],
@@ -989,14 +950,11 @@ def clear_filled_rows(board):
                     if(facing[yoffset][xoffset] == 1):
                         facingcorners += 1
 
-        if(tspinkick):
-            if(corners >= 3):
-                if(facingcorners == 2):
-                    gointob2b = 2
-                else:
-                    gointob2b = 1
-                    if(bigkick == True):
-                        gointob2b = 2
+        if(corners >= 3):
+            if(facingcorners == 2):
+                gointob2b = 2
+            else:
+                gointob2b = 1
 
     if(len(filled_rows) > 0):
         combo = True
@@ -1016,6 +974,7 @@ combo = False
 b2b = False
 combocount = 0
 score = 0
+tspinkick = False
 gointob2b = 0
 
 lastpcpiececount = 0
@@ -1111,22 +1070,16 @@ def kicksubtract(kicktable1, kicktable2):
         subtractedkicktable.append([kick1[0] - kick2[0], kick1[1] - kick2[1]])
     return subtractedkicktable
 
-tspinkick = False
-bigkick = False
 def rotatepiece(rotation):
-    global currentpiecerotation, currentpiece, currentpiecex, currentpiecey, tspinkick, bigkick
+    global currentpiecerotation, currentpiece, currentpiecex, currentpiecey, tspinkick
     plsbreak = False
     kicks = pieces[currentpiece]["srs"][str(currentpiecerotation) + str((currentpiecerotation + rotation) % 4)]
     for kicknumber, offset in enumerate(kicks):
         if placeable(currentpiece, (currentpiecerotation + rotation) % 4, currentpiecex + offset[0], currentpiecey + (offset[1] * -1)):
-            if(currentpiece == "T"):
+            if(currentpiece == "T" and kicknumber > 0):
                 tspinkick = True
-                if(kicknumber == 4):
-                    bigkick = True
             else:
                 tspinkick = False
-                bigkick = False
-
             #print(f"offset of {offset[0]}x and {(offset[1] * -1)}y works")
             currentpiecex += offset[0]
             currentpiecey += (offset[1] * -1)
@@ -1170,9 +1123,6 @@ def move_left_das():
 def move_right_das():
     move_das(1)
 
-tosave = "nopieceboard queue currentpiece holdpiece bag piecesplaced score consecutivepcs consecutiveb2bs"
-tosave = tosave.split()
-
 piecesplaced = 0
 
 def harddrop():
@@ -1180,17 +1130,11 @@ def harddrop():
 
     visualizeboard = ""
 
-    counter = 0
     while placeable(currentpiece, currentpiecerotation, currentpiecex, currentpiecey):
         currentpiecey += 1
         score += 2
-        counter += 1
     currentpiecey -= 1
     score -= 2
-
-    if(counter != 1):
-        bigkick = False
-        tspinkick = False
 
     putpiece(currentpiece, currentpiecerotation, currentpiecex, currentpiecey, nopieceboard)
 
@@ -1213,22 +1157,37 @@ def harddrop():
 
 undooffset = 0
 
+thingstosave = "nopieceboard queue currentpiece holdpiece bag piecesplaced score consecutivepcs consecutiveb2bs"
+thingstosave = thingstosave.split()
+
 def savestate():
-    temp = []
-    for i in tosave:
+    tempappend = []
+    for i in thingstosave:
         if(type(eval(i)) == type([])):
-            temp.append(deepcopy(eval(i)))
+            tempappend.append(deepcopy(eval(i)))
         else:
-            temp.append(eval(i))
-    allboards.append(temp)
+            tempappend.append(eval(i))
+    allboards.append(tempappend)
 
 def loadboard():
     global nopieceboard, board, queue, currentpiece, holdpiece, bag, piecesplaced, currentpiecerotation, currentpiecex, currentpiecey, score, undooffset, visualizeboard
     visualizeboard = ""
 
-    for saveindex, i in enumerate(tosave):
-        global_dict = globals()  # Get the global dictionary
-        global_dict[i] = deepcopy(allboards[-1 - undooffset][saveindex])
+    """
+    nopieceboard = deepcopy(allboards[-1 - undooffset][0])
+    board = deepcopy(nopieceboard)
+
+    queue = deepcopy(allboards[-1 - undooffset][1])
+    currentpiece = deepcopy(allboards[-1 - undooffset][2])
+    holdpiece = deepcopy(allboards[-1 - undooffset][3])
+    bag = deepcopy(allboards[-1 - undooffset][4])
+    piecesplaced = allboards[-1 - undooffset][5]
+    score = allboards[-1 - undooffset][6]
+    """
+
+    for savedindex, saved in enumerate(thingstosave):
+        global_dict = globals()
+        global_dict[saved] = allboards[-1 - undooffset][savedindex]
 
     clearscreen(-6, -3, 6, 3)
     if(not holdpiece == ""):
@@ -1266,14 +1225,9 @@ def softdrop():
 
 def softdrop_das():
     global currentpiecey, score
-    counter = 0
     while placeable(currentpiece, currentpiecerotation, currentpiecex, currentpiecey):
         currentpiecey += 1
         score += 1
-        counter += 1
-    if(counter != 1):
-        bigkick = False
-        tspinkick = False
     currentpiecey -= 1
     score -= 1
     drawallpieces()
@@ -1303,17 +1257,24 @@ def grid(startx, starty, boardlength, boardheight, blocksize, blockwidth):
     for i in range(startx, startx + (boardlength * blocksize), blocksize):
         for j in range(starty, starty + (boardheight * blocksize), blocksize):
             rect = pygame.Rect(i, j, blocksize, blocksize)
-            pygame.draw.rect(s, (200, 200, 200), rect, blockwidth)
+            pygame.draw.rect(s, (51, 51, 51), rect, blockwidth)
 
 def blockrenderer(x, y, color, smaller = False):
     global startx, starty, blocksize, blockwidth
+    """
+    if(smaller):
+        block = pygame.Rect(startx + (x * blocksize) + blocksize // 4, starty + (y * blocksize) + blocksize // 4, blocksize // 2, blocksize // 2)
+    else:
+        block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize)
+
+    pygame.draw.rect(s, color, block, blocksize - 1)
+    """
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize)
 
     if(smaller):
         pygame.draw.rect(s, tuple([i + (sum(color)//3 - i)/2 for i in list(color)]), block, blocksize - 1)
     else:
         pygame.draw.rect(s, color, block, blocksize - 1)
-
 
 def writetext(x, y, text, size):
     global startx, starty, blocksize, blockwidth
@@ -1347,13 +1308,14 @@ def createcolorsquares():
 
 def createsettextboxes():
     for box in textvariables:
-        settextbutton(box[0], str(eval(box[4])), box[1], box[2], box[3])
+        settextbutton(box[0], str(eval(box[4])), box[1], box[2], box[3], 24)
 
-def settextbutton(text, subtext, x, y, color):
+def settextbutton(text, subtext, x, y, color, size):
     for i in range(4):
         for j in range(2):
             blockrenderer(x + i, j + y, color)
 
+    font = pygame.font.SysFont(None, size)
     pytext = normalfont.render(text, True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
@@ -1368,6 +1330,7 @@ def grayoutboard():
 def truefalsebutton(text, x, y, value):
     clearscreen(x - 1, y - 1, 4, 3)
 
+    font = pygame.font.SysFont(None, 24)
     pytext = normalfont.render(text, True, (255, 255, 255))
 
     textwidth = pytext.get_width()
@@ -1387,15 +1350,15 @@ def truefalsebutton(text, x, y, value):
 
 def createsfinderboxes():
     for box in ezsfindervariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
 
 def createmenuboxes():
     for box in menuvariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
 
 def createsettingboxes():
     for box in settingvariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
 
 controlcolors = [RED, BLUE]
 def createcontrolboxes():
@@ -1404,7 +1367,7 @@ def createcontrolboxes():
 
 def createhelpboxes():
     for box in helpvariables:
-        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3])
+        setezsfinderbutton(box[0], "deprecated", box[1], box[2], box[3], 24)
 
 def createtruefalse():
     for truefalse in truevariables:
@@ -1414,7 +1377,7 @@ def settingtruefalse():
     for truefalse in settingtruevariables:
         truefalsebutton(truefalse[0], truefalse[1], truefalse[2], truefalse[3])
 
-def setezsfinderbutton(text, subtext, x, y, color):
+def setezsfinderbutton(text, subtext, x, y, color, size):
     for i in range(4):
         for j in range(2):
             blockrenderer(x + i, j + y, color)
@@ -1429,7 +1392,7 @@ def setcontrolbutton(text, subtext, x, y, color, size):
         for j in range(1):
             blockrenderer(x + i, j + y, color)
 
-    font = pygame.font.Font(f'fonts\ComicMono.ttf',size)
+    font = pygame.font.SysFont(None, size)
     pytext = normalfont.render(text, True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
@@ -1438,20 +1401,20 @@ def setcontrolbutton(text, subtext, x, y, color, size):
 def setqueuebutton():
     x = boardlength + 2
     y = -2
-    for i in range(4):
-        for j in range(2):
-            blockrenderer(x + i, y + j, RESET)
+    clearscreen(x, y, 4, 2, RESET)
 
+    font = pygame.font.SysFont(None, 24)
     pytext = normalfont.render("Set game queue", True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
 
 def setheldpiece():
-    x = statx
+    x = -5
     y = -5
 
-    pytext = normalfont.render("Set held piece", True, (255, 255, 255))
+    font = pygame.font.SysFont(None, 24)
+    pytext = normalfont.render("Set the held piece", True, (255, 255, 255))
     textwidth = pytext.get_width()
     textheight = pytext.get_height()
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
@@ -1465,9 +1428,13 @@ def set_variable(variable_name):
     window.title("Set Variable")
     window.geometry("300x100")  # Set window size to 300x100
 
+    print("Window initialized")
+
     # Create label
     label = tk.Label(window, text=f"Set the value of {variable_name}")
     label.pack()
+
+    print("Textbox inserted")
 
     # Create textbox
     textbox = tk.Entry(window)
@@ -1477,8 +1444,10 @@ def set_variable(variable_name):
         textbox.insert(-1, eval(variable_name))
 
     textbox.pack()
+    print("Inserted value")
     # Function to set the variable and close the window
     def set_value():
+        print("setting value")
         if(variable_name == "loadfumen"):
             loadfumen(textbox.get())
         else:
@@ -1487,6 +1456,7 @@ def set_variable(variable_name):
 
         window.destroy()
         root.quit()
+        print("done")
 
     # Bind Enter key to set_value function
     textbox.bind('<Return>', lambda event: set_value())
@@ -1494,6 +1464,7 @@ def set_variable(variable_name):
     # Protocol handler for window close event
     window.protocol("WM_DELETE_WINDOW", set_value)
 
+    print("starting  the main loop")
     window.mainloop()  # Start the tkinter event loop
     root.destroy()
 
@@ -1604,6 +1575,7 @@ def save_key_input(key_name):
     window.mainloop()  # Start the tkinter event loop
 
 def set_queue():
+    print("setting queue")
     root = tk.Tk()
     root.withdraw()  # Hide the tkinter window
 
@@ -1695,7 +1667,7 @@ ezsfindervariables = [
 
 helpvariables = [
 ["Pure PC save", helpbuttonboxx, 0, BLUE, "pc_finder"],
-["DPC save", helpbuttonboxx, 2, BLUE, "dpc_save_finder"],
+["DPC save save", helpbuttonboxx, 2, BLUE, "dpc_save_finder"],
 [":cat: solve", helpbuttonboxx, 4, BLUE, "cat_finder"]
 ]
 
@@ -1712,10 +1684,6 @@ textvariables = [
 ["Load fumen", textboxx, 8, ORANGE, "loadfumen"]
 ]
 
-settingvariables = [
-["Set fed queue", textboxx, 0, ORANGE, "sfinder_fed_queue"]
-]
-
 truefalsex = 18
 truevariables = [
 ["Initial b2b", truefalsex, -2, initial_b2b],
@@ -1724,7 +1692,7 @@ truevariables = [
 menubuttonx = 22
 menuvariables = [
 ["Help Tools", menubuttonx, 12, RED],
-["Research", menubuttonx, 14, BLUE],
+["Quick Research", menubuttonx, 14, BLUE],
 ["Settings", menubuttonx, 16, RED],
 ]
 
@@ -1737,34 +1705,34 @@ settingvariables = [
 ]
 
 settingtruevariables = [
-["Setup Finder", settingvariablesx + 1, 10, loadsetups],
+["Load Setups", settingvariablesx + 1, 10, loadsetups],
 ]
 
 def drawlastcommand():
     global textboxx
     x = -5
     y = 16
+    font = pygame.font.SysFont(None, 24)
     pytext = normalfont.render(lastcommand, True, (255, 255, 255))
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), 20 * blocksize, 2 * blocksize)
     pygame.draw.rect(s, RESET, block)
     s.blit(pytext, (startx + (x * blocksize), starty + (y * blocksize), blocksize, blocksize))
 
-def clearscreen(x, y, width, height):
+def clearscreen(x, y, width, height, color = RESET):
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), width * blocksize, height * blocksize)
-    pygame.draw.rect(s, RESET, block)
-
-statx = -6
-staty = 5
-statincrement = 0.8
-statsize = blocksize//4
+    pygame.draw.rect(s, color, block)
 
 def drawallpieces():
     global board, lastdrawn
-
     clearscreen(0, 0, boardlength + 6, boardheight + 2)
-    clearscreen(0, -1, 2, 1)
+    clearscreen(0, 0, boardlength, boardheight, TETRISBOARD)
     drawghostpiece()
     drawlastcommand()
+
+    statx = -5
+    staty = 5
+    statincrement = 0.8
+    statsize = 24
 
     clearscreen(statx, 5, staty, 10)
     stattext(statx, staty + statincrement, f"Score", statsize)
@@ -1781,7 +1749,6 @@ def drawallpieces():
     stattext(statx, staty + statincrement * 8, "0" * max(8 - len(str(consecutivepcs)), 0) + str(consecutivepcs), statsize)
     stattext(statx, staty + statincrement * 9, f"Chain B2B", statsize)
     stattext(statx, staty + statincrement * 10, "0" * max(8 - len(str(consecutiveb2bs)), 0) + str(consecutiveb2bs), statsize)
-    #stattext(statx, staty + statincrement * 8, "0" * max(8 -len(str((piecesplaced * 5 % 7) + 1)), 0) + str((piecesplaced * 5 % 7) + 1), statsize)
 
     if(visualizeboard != ""):
         drawvisualizer(visualizeboard)
@@ -1813,7 +1780,7 @@ def drawqueue():
             drawinfopieces(pieceindex * 3, boardlength + 1 + (4 - len(pieces[piece]["shape"][0])), piece)
 
 def reset():
-    global holdpiece, currentpiece, queue, currentpiecerotation, currentpiecex, currentpiecey, nopieceboard, board, bag, score, piecesplaced, startingseed, visualizeboard, consecutivepcs, consecutiveb2bs
+    global holdpiece, currentpiece, queue, currentpiecerotation, currentpiecex, currentpiecey, nopieceboard, board, bag, score, piecesplaced, startingseed, visualizeboard
 
     startingseed = randint(0, 100000)
 
@@ -1834,8 +1801,6 @@ def reset():
     savestate()
     visualizeboard = ""
     undooffset = 0
-    consecutivepcs = 0
-    consecutiveb2bs = 0
 
 putpiece(currentpiece, currentpiecerotation, currentpiecex, currentpiecey)
 drawallpieces()
@@ -1885,7 +1850,7 @@ keyspressed = []
 clock = pygame.time.Clock()
 
 # Set the font for the fps display
-font = pygame.font.Font(f'fonts\ComicMono.ttf',30)
+font = pygame.font.SysFont(None, 30)
 menu = 0
 
 def createmenu():
@@ -1988,7 +1953,7 @@ while running:
                 if(pos[0] >= box[1] and pos[0] <= box[1] + 3 and pos[1] >= box[2] and pos[1] <= box[2] + 1):
                     set_variable(box[4])
 
-            if(pos[0] >= 22 and pos[0] <= 26 and pos[1] >= 0 and pos[1] < len(controlslist)):
+            if(pos[0] >= 22 and pos[0] <= 26 and pos[1] >= 0 and pos[1] < boardheight):
                 for iindex, i in enumerate(controls):
                     if(controls[i] == controlslist[pos[1]]):
                         save_key_input(i)
