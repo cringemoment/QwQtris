@@ -193,7 +193,6 @@ def loadfumen(fumen):
         nopieceboard = deepcopy(fulllengthboard)
         drawallpieces()
 
-debug = False
 def system(command):
     global lastcommand
     if(debug):
@@ -381,7 +380,7 @@ def pc_finder():
 def dpc_save_finder():
     global visualizeboard, lastcommand
     count = 0
-    startingheight = boardheight - 2
+    startingheight = boardheight - 3
     highestvalue = startingheight
 
     for rowindex, row in enumerate(nopieceboard):
@@ -485,7 +484,7 @@ def getscore(queue, clear, fumen):
 def cat_finder():
     global visualizeboard, lastcommand
     count = 0
-    startingheight = boardheight - 2
+    startingheight = boardheight - 3
     highestvalue = startingheight
 
     for rowindex, row in enumerate(nopieceboard):
@@ -519,14 +518,19 @@ def cat_finder():
 
     piecesfile.close()
 
+    lastpath = open("output/path.csv").read()
 
     system(f"java -jar sfinder.jar path -t {fumen} -pp queuefeed.txt --clear {highestvalue} --hold avoid --split yes -f csv -k pattern -o output/path.csv > ezsfinder.txt")
 
-    system(f"node best_score.js initialB2B={b2b} initialCombo={combo} queue={allpieces} > ezsfinder.txt")
-    bestsolve = open("ezsfinder.txt").read().replace("\n", "")
+    currentpath = open("output/path.csv").read()
+    if(currentpath == lastpath or not "1" in currentpath):
+        lastcommand = "No solution, sorry"
+    else:
+        system(f"node best_score.js initialB2B={b2b} initialCombo={combo} queue={allpieces} > ezsfinder.txt")
+        bestsolve = open("ezsfinder.txt").read().replace("\n", "")
 
-    system(f"node unglueFumen.js --fu {bestsolve} > ezsfinder.txt")
-    visualizeboard = open("ezsfinder.txt").read().replace("\n", "")
+        system(f"node unglueFumen.js --fu {bestsolve} > ezsfinder.txt")
+        visualizeboard = open("ezsfinder.txt").read().replace("\n", "")
 
 allsetups = {}
 
