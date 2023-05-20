@@ -16,8 +16,8 @@ An attempt at a more pc-orientated client
 ## Features
 * Fumen importing/exporting
 * Some basic tetris research shorthands
-* PC Finder (this one is good)
-* Setup Finder (this one is not so good)
+* PC, DPC, and :cat: finder
+* Setup finders
 * An ok tetris client
 
 ## Future plans
