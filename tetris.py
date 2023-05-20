@@ -193,6 +193,7 @@ def loadfumen(fumen):
         nopieceboard = deepcopy(fulllengthboard)
         drawallpieces()
 
+debug = False
 def system(command):
     global lastcommand
     if(debug):
