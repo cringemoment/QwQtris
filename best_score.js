@@ -1118,7 +1118,10 @@ score_cover_filename = undefined, // .csv file to output score cover to
 	//console.log(extras);
 
 	//console.log(`b2b: ${num_b2b_queues}/${queues.length} = ${(num_b2b_queues/queues.length).toFixed(4)}`);
-	return encoder.encode(solves[0])
+	console.log(encoder.encode(solves[0]))
+	for (const key in extras) {
+  	console.log(`${key}`);
+	}
 }
 
 function generate_permutations(bag, permutationLength) {
@@ -1260,7 +1263,7 @@ const csvFile = fileType === 'cover' ? loadCSV(fileName) : loadPathCSV(fileName)
 // Get all permutations using sfinder_all_permutations()
 
 // Calculate scores using calculate_all_scores() with the loaded CSV file and command-line arguments
-const results = calculate_all_scores(
+calculate_all_scores(
   [queuesinput],
   csvFile,
   initialB2B,
@@ -1268,5 +1271,3 @@ const results = calculate_all_scores(
   b2bEndBonus,
   'output/score_cover.csv',
 );
-
-console.log(results);
