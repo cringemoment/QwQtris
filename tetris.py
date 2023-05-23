@@ -547,10 +547,16 @@ def cat_finder():
     if(currentpath == lastpath or not "1" in currentpath):
         lastcommand = "No solution, sorry"
     else:
-        system(f"node best_score.js initialB2B={b2b} initialCombo={combo} queue={allpieces} > ezsfinder.txt")
-        bestsolve = open("ezsfinder.txt").read().replace("\n", "")
+        fedb2b = "true" if b2b else "false"
+        system(f"node best_score.js initialB2B={fedb2b} initialCombo={combo} queue={allpieces} > ezsfinder.txt")
+        bestsolve = open("ezsfinder.txt").read().splitlines()
+        if(len(bestsolve) > 1):
+            extras = bestsolve[1]
+            lastcommand = f"The optimal solve is {extras}"
+        else:
+            lastcommand = "There is no extra scoring"
 
-        system(f"node unglueFumen.js --fu {bestsolve} > ezsfinder.txt")
+        system(f"node unglueFumen.js --fu {bestsolve[0]} > ezsfinder.txt")
         visualizeboard = open("ezsfinder.txt").read().replace("\n", "")
 
 allsetups = {}
@@ -1434,7 +1440,7 @@ def setqueuebutton():
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
 
 def setheldpiece():
-    x = statx
+    x = statx + 1
     y = -5
 
     pytext = normalfont.render("Set held piece", True, (255, 255, 255))
