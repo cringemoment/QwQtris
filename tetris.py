@@ -7,6 +7,7 @@ import tkinter as tk
 import itertools
 from bs4 import BeautifulSoup
 from collections import OrderedDict
+from json import loads
 
 #if you're looking to modify something, it's probably here
 das = 83
@@ -557,19 +558,19 @@ allsetups = {}
 if(loadsetups):
     print("Loading konbini setups")
     firstsetups = open("konbini/first.txt").read().splitlines()
-    firstsetupscover6 = eval(open("konbini/first-covered-6.json").read())
-    firstsetupscover7 = eval(open("konbini/first-covered-7.json").read())
+    firstsetupscover6 = loads(open("konbini/first-covered-6.json").read())
+    firstsetupscover7 = loads(open("konbini/first-covered-7.json").read())
     print("PC number 1 loaded")
 
     for i in range(2, 8):
         allsetups[i] = {}
         allsetups[i]["setups"] = open(f"konbini/setups{i}.txt").read().splitlines()
-        allsetups[i]["cover"] = eval(open(f"konbini/setups{i}cover.json").read())
+        allsetups[i]["cover"] = loads(open(f"konbini/setups{i}cover.json").read())
         print(f"PC number {i} loaded")
 
 if(loadsetups):
     dpcsetups = open("konbini/dpc.txt").read().splitlines()
-    dpccover = eval(open("konbini/dpccover.json").read())
+    dpccover = loads(open("konbini/dpccover.json").read())
     print(f"DPC setups loaded")
 
 def unglue(glued):
