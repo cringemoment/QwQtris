@@ -14,17 +14,16 @@ das = 83
 arr = 0
 softdropdelay = 0
 softdropspeed = 0
-loadsetups = False #Loading setups take ages so disable this if you don't want it
 boardlength = 10
 boardheight = 15
 defaultboardcharacter = "_"
 board = [[defaultboardcharacter for idea in range(boardlength)] for i in range(boardheight)]
 nopieceboard = deepcopy(board)
 allboards = []
-blocksize = 28
+blocksize = 20
 blockwidth = 1
 startx = blocksize * 7
-starty = int(blocksize * 5.5)
+starty = int(blocksize * 4)
 pygame.font.init()
 normalfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 18//32)
 statfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 24//32)
@@ -46,7 +45,8 @@ GARBAGE = (204, 204, 204)
 BLACK = (0, 0, 0)
 
 pygame.init()
-s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize))
+s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize), pygame.RESIZABLE)
+aspectratio = (boardheight * blocksize + extray * blocksize)/(boardlength * blocksize + extrax * blocksize)
 s.fill(RESET)
 pygame.display.set_caption("QwQtris")
 
@@ -305,6 +305,9 @@ def evaluatesave(save):
 
     if(save.count("J") + save.count("L") % 2 == 0):
         score += 8
+
+    if(len(set(save)) != len(save)):
+        score -= 2
 
     return score
 
@@ -1015,7 +1018,7 @@ consecutivepcs = 0
 consecutiveb2bs = 0
 
 def tabulatescore(linescleared, activateb2b):
-    global combo, combocount, b2b, lastpcpiececount, consecutivepcs, consecutiveb2bs
+    global combo, combocount, b2b, lastpcpiececount, consecutivepcs, consecutiveb2bs, lastpc
 
     pced = False
 
@@ -1037,6 +1040,7 @@ def tabulatescore(linescleared, activateb2b):
         pced = True
         consecutivepcs += 1
         lastpcpiececount = piecesplaced
+        lastpc = str(((piecesplaced + 1) * 5 % 7) + 1)
 
     if(piecesplaced - lastpcpiececount > 10):
         consecutivepcs = 0
@@ -1071,8 +1075,8 @@ def tabulatescore(linescleared, activateb2b):
     if(combo == True):
         combocount += 1
 
-    clearscreen(-5, 0, 6, 4)
-    writetext(-5, 0, word, 30)
+    clearscreen(statx, 3, 6, 4)
+    writetext(statx, 3, word, 30)
 
     return(int(currentscore))
 
@@ -1162,7 +1166,7 @@ def move_left_das():
 def move_right_das():
     move_das(1)
 
-tosave = "nopieceboard queue currentpiece holdpiece bag piecesplaced score consecutivepcs consecutiveb2bs"
+tosave = "nopieceboard queue currentpiece holdpiece bag piecesplaced score consecutivepcs consecutiveb2bs lastpc"
 tosave = tosave.split()
 
 piecesplaced = 0
@@ -1222,12 +1226,12 @@ def loadboard():
         global_dict = globals()  # Get the global dictionary
         global_dict[i] = deepcopy(allboards[-1 - undooffset][saveindex])
 
-    clearscreen(-6, -3, 6, 3)
+    clearscreen(-7, 0, 6, 3)
     if(not holdpiece == ""):
         if(holdpiece == "I"):
-            drawinfopieces(-5, -6, holdpiece)
+            drawinfopieces(-2, -7, holdpiece)
         else:
-            drawinfopieces(-3, -4, holdpiece)
+            drawinfopieces(-0, -5, holdpiece)
 
     if bag == []:
         bag = deepcopy(ogbag)
@@ -1283,11 +1287,11 @@ def hold():
     currentpiecerotation = 0
     currentpiecex = pieces[currentpiece]["spawnposition"]
     currentpiecey = 0
-    clearscreen(-6, -3, 6, 3)
+    clearscreen(-7, 0, 6, 3)
     if(holdpiece == "I"):
-        drawinfopieces(-5, -6, holdpiece)
+        drawinfopieces(-2, -7, holdpiece)
     else:
-        drawinfopieces(-3, -4, holdpiece)
+        drawinfopieces(0, -5, holdpiece)
 
 running = True
 
@@ -1428,7 +1432,7 @@ def setcontrolbutton(text, subtext, x, y, color, size):
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (0.5 *  blocksize) - textheight/2, blocksize, blocksize))
 
 def setqueuebutton():
-    x = boardlength + 2
+    x = boardlength + 1.5
     y = -2
     for i in range(4):
         for j in range(2):
@@ -1440,8 +1444,8 @@ def setqueuebutton():
     s.blit(pytext, (startx + (x * blocksize) + (2 * blocksize) - textwidth/2, starty + (y * blocksize) + (1 *  blocksize) - textheight/2, blocksize, blocksize))
 
 def setheldpiece():
-    x = statx + 1
-    y = -5
+    x = statx
+    y = -2
 
     pytext = normalfont.render("Set held piece", True, (255, 255, 255))
     textwidth = pytext.get_width()
@@ -1734,8 +1738,8 @@ settingtruevariables = [
 
 def drawlastcommand():
     global textboxx
-    x = -5
-    y = 16
+    x = statx
+    y = 18
     pytext = normalfont.render(lastcommand, True, (255, 255, 255))
     block = pygame.Rect(startx + (x * blocksize), starty + (y * blocksize), 20 * blocksize, 2 * blocksize)
     pygame.draw.rect(s, RESET, block)
@@ -1750,6 +1754,8 @@ staty = 5
 statincrement = 0.8
 statsize = blocksize//4
 
+lastpc = "1"
+
 def drawallpieces():
     global board, lastdrawn
 
@@ -1758,7 +1764,7 @@ def drawallpieces():
     drawghostpiece()
     drawlastcommand()
 
-    clearscreen(statx, 5, staty, 10)
+    clearscreen(statx, 5, staty + 2, 12)
     stattext(statx, staty + statincrement, f"Score", statsize)
     stattext(statx, staty + statincrement * 2, "0" * max(8 - len(str(score)), 0) + str(score), statsize)
 
@@ -1773,7 +1779,8 @@ def drawallpieces():
     stattext(statx, staty + statincrement * 8, "0" * max(8 - len(str(consecutivepcs)), 0) + str(consecutivepcs), statsize)
     stattext(statx, staty + statincrement * 9, f"Chain B2B", statsize)
     stattext(statx, staty + statincrement * 10, "0" * max(8 - len(str(consecutiveb2bs)), 0) + str(consecutiveb2bs), statsize)
-    #stattext(statx, staty + statincrement * 8, "0" * max(8 -len(str((piecesplaced * 5 % 7) + 1)), 0) + str((piecesplaced * 5 % 7) + 1), statsize)
+    stattext(statx, staty + statincrement * 11, "PC Number", statsize)
+    stattext(statx, staty + statincrement * 12, lastpc, statsize)
 
     if(visualizeboard != ""):
         drawvisualizer(visualizeboard)
@@ -1907,6 +1914,7 @@ tap = False
 
 while running:
     presseddown = pygame.key.get_pressed()
+
     for key in controls:
         if(presseddown[key]):
             if(key in keyspressed):
@@ -2013,6 +2021,26 @@ while running:
         if event.type == pygame.QUIT:
             savecontrols()
             running = False
+
+        elif event.type == pygame.VIDEORESIZE:
+            x, y = s.get_size()
+            blocksize = x // (boardlength + extrax)
+            print(blocksize)
+            s = pygame.display.set_mode((boardlength * blocksize + extrax * blocksize, boardheight * blocksize + extray * blocksize), pygame.RESIZABLE)
+
+            s.fill(RESET)
+
+            normalfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 18//32)
+            statfont = pygame.font.Font(f'fonts\ComicMono.ttf', blocksize * 24//32)
+
+            createmenu()
+
+            createcolorsquares()
+            createmenuboxes()
+            setqueuebutton()
+            setheldpiece()
+            savestate()
+            drawallpieces()
 
     # Tick the clock
     pygame.display.update()

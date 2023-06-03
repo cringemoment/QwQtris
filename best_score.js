@@ -956,10 +956,10 @@ function extra_string(extras) {
 		if (extra.b2b) temp += "B2B "
 		if (extra.tspin) {
 			temp += "TS";
-			if (extra.mini) temp += "M";
-			temp += "0SDT"[extra.lines_cleared];
+			if (extra.mini) temp += "M ";
+			temp += "0SDT "[extra.lines_cleared];
 		}
-		if (extra.lines_cleared == 4) temp += "quad";
+		if (extra.lines_cleared == 4) temp += "quad ";
 
 		result += temp;
 
